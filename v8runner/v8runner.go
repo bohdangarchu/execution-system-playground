@@ -8,8 +8,8 @@ import (
 )
 
 func ExecuteJavaScript(code string) (string, string, error) {
-	// for every console.log the logMessages variable get updated
-	// end is returned in the end
+	// for every console.log the logMessages variable gets updated
+	// and is returned in the end
 	iso := v8.NewIsolate()
 
 	ctx := v8.NewContext(iso)
