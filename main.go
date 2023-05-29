@@ -2,7 +2,6 @@ package main
 
 import (
 	"app/docrunner"
-	"app/firerunner"
 	"app/v8runner"
 	"fmt"
 	"time"
@@ -20,7 +19,8 @@ type functionSubmission struct {
 }
 
 func main() {
-	firerunner.RunFirecracker()
+	// firerunner.RunFirecracker()
+	testPerformance()
 }
 
 func testPerformance() {
