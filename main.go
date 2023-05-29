@@ -20,13 +20,15 @@ type functionSubmission struct {
 
 func main() {
 	// firerunner.RunFirecracker()
-	code := "function square(a) { return a*a; } console.log(square(55));"
-	_, output, err := v8runner.ExecuteJsWithConsoleOutput(code)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("out: ", output)
-	// testPerformance()
+
+	// code := "function square(a) { return a*a; } console.log(square(55));"
+	// output, err := v8runner.ExecuteJsWithConsoleOutput(code)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println("out: ", output)
+
+	testPerformance()
 }
 
 func testPerformance() {
@@ -42,26 +44,28 @@ func testPerformance() {
 		fmt.Printf("\nTest Case %d:\n", i+1)
 		fmt.Println("JavaScript Code:\n", jsSubmission)
 
-		// Measure execution time for v8runner
-		startTimeV8 := time.Now()
-		_, outputV8, errV8 := v8runner.ExecuteJavaScript(jsSubmission)
-		if errV8 != nil {
-			fmt.Println("v8runner Error:", errV8)
-		}
-		elapsedTimeV8 := time.Since(startTimeV8)
-		fmt.Println("v8runner Output:", outputV8)
-		fmt.Println("v8runner Execution Time:", elapsedTimeV8)
+		fmt.Println("execution time for v8runner")
+		measureExecutionTime(jsSubmission, v8runner.ExecuteJavaScript)
 
-		// Measure execution time for docrunner
-		startTimeDoc := time.Now()
-		outDoc, errDoc := docrunner.RunJsInDocker(jsSubmission)
-		if errDoc != nil {
-			fmt.Println("docrunner Error:", errDoc)
-		}
-		elapsedTimeDoc := time.Since(startTimeDoc)
-		fmt.Println("docrunner Output:", outDoc)
-		fmt.Println("docrunner Execution Time:", elapsedTimeDoc)
+		fmt.Println("Measure execution time for docrunner")
+		measureExecutionTime(jsSubmission, docrunner.RunJsInDocker)
+
+		fmt.Println("measure exec time for v8 with output redirection")
+		measureExecutionTime(jsSubmission, v8runner.ExecuteJsWithConsoleOutput)
 	}
+}
+
+func measureExecutionTime(jsSubmission string, fn func(string) (string, error)) {
+	startTime := time.Now()
+	output, err := fn(jsSubmission)
+	elapsedTime := time.Since(startTime)
+
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+
+	fmt.Println("Output:", output)
+	fmt.Println("Execution Time:", elapsedTime)
 }
 
 func testSecurity() {
@@ -84,7 +88,7 @@ func testSecurity() {
 		// Security test using v8runner
 		fmt.Println("=== v8runner ===")
 		startTimeV8 := time.Now()
-		_, outputV8, errV8 := v8runner.ExecuteJavaScript(jsSubmission)
+		outputV8, errV8 := v8runner.ExecuteJavaScript(jsSubmission)
 		if errV8 != nil {
 			fmt.Println("v8runner Error:", errV8)
 		}

@@ -9,7 +9,7 @@ import (
 	v8 "rogchap.com/v8go"
 )
 
-func ExecuteJavaScript(code string) (string, string, error) {
+func ExecuteJavaScript(code string) (string, error) {
 	// for every console.log the logMessages variable gets updated
 	// and is returned in the end
 	iso := v8.NewIsolate()
@@ -19,19 +19,39 @@ func ExecuteJavaScript(code string) (string, string, error) {
 	ctx.RunScript("var logMessages = [];", "main.js")
 	ctx.RunScript("console.log = function() { logMessages.push.apply(logMessages, arguments); };", "main.js")
 
-	resultValue, err := ctx.RunScript(code, "main.js")
+	_, err := ctx.RunScript(code, "main.js")
 
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	output, err := ctx.RunScript("logMessages", "main.js")
 
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	return resultValue.String(), output.String(), nil
+	return output.String(), nil
+}
+
+func ExecuteJsWithConsoleOutput(code string) (string, error) {
+	ctx := v8.NewContext()
+
+	var buf bytes.Buffer
+
+	if err := v8console.InjectTo(ctx, v8console.WithOutput(&buf)); err != nil {
+		return "", err
+	}
+
+	_, err := ctx.RunScript(code, "main.js")
+	if err != nil {
+		return "", err
+	}
+
+	logs := buf.String()
+
+	return logs, nil
+
 }
 
 func executeJavaScriptRedirectOutput(code string) (string, string, error) {
@@ -60,24 +80,4 @@ func executeJavaScriptRedirectOutput(code string) (string, string, error) {
 	}
 
 	return resultValue.String(), sb.String(), nil
-}
-
-func ExecuteJsWithConsoleOutput(code string) (string, string, error) {
-	ctx := v8.NewContext()
-
-	var buf bytes.Buffer
-
-	if err := v8console.InjectTo(ctx, v8console.WithOutput(&buf)); err != nil {
-		return "", "", err
-	}
-
-	val, err := ctx.RunScript(code, "main.js")
-	if err != nil {
-		return "", "", err
-	}
-
-	logs := buf.String()
-
-	return val.String(), logs, nil
-
 }
