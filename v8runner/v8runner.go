@@ -1,9 +1,11 @@
 package v8runner
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
+	v8console "go.kuoruan.net/v8go-polyfills/console"
 	v8 "rogchap.com/v8go"
 )
 
@@ -58,4 +60,24 @@ func executeJavaScriptRedirectOutput(code string) (string, string, error) {
 	}
 
 	return resultValue.String(), sb.String(), nil
+}
+
+func ExecuteJsWithConsoleOutput(code string) (string, string, error) {
+	ctx := v8.NewContext()
+
+	var buf bytes.Buffer
+
+	if err := v8console.InjectTo(ctx, v8console.WithOutput(&buf)); err != nil {
+		return "", "", err
+	}
+
+	val, err := ctx.RunScript(code, "main.js")
+	if err != nil {
+		return "", "", err
+	}
+
+	logs := buf.String()
+
+	return val.String(), logs, nil
+
 }

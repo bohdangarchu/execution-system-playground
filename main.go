@@ -20,7 +20,13 @@ type functionSubmission struct {
 
 func main() {
 	// firerunner.RunFirecracker()
-	testPerformance()
+	code := "function square(a) { return a*a; } console.log(square(55));"
+	_, output, err := v8runner.ExecuteJsWithConsoleOutput(code)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("out: ", output)
+	// testPerformance()
 }
 
 func testPerformance() {
