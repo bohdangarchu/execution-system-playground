@@ -2,21 +2,11 @@ package main
 
 import (
 	"app/docrunner"
+	"app/types"
 	"app/v8runner"
 	"fmt"
 	"time"
 )
-
-type inputOutput struct {
-	input          []string
-	expectedOutput string
-}
-
-type functionSubmission struct {
-	name             string
-	code             string
-	inputOutputPairs []inputOutput
-}
 
 func main() {
 	// firerunner.RunFirecracker()
@@ -28,7 +18,27 @@ func main() {
 	// }
 	// fmt.Println("out: ", output)
 
-	testPerformance()
+	// testPerformance()
+	testRunFunctionWithInputs()
+}
+
+func testRunFunctionWithInputs() {
+	subm := types.FunctionSubmission{
+		FunctionName:    "add",
+		ParameterString: "a, b",
+		CodeSubmission:  "return a + b",
+	}
+	inOutArray := []types.InputOutput{
+		{
+			Input:          []string{"1", "2"},
+			ExpectedOutput: "3",
+		},
+		{
+			Input:          []string{"2", "-3"},
+			ExpectedOutput: "-1",
+		},
+	}
+	v8runner.RunFunctionWithInputs(subm, inOutArray)
 }
 
 func testPerformance() {

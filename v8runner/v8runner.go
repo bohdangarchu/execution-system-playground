@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"app/types"
+
 	v8console "go.kuoruan.net/v8go-polyfills/console"
 	v8 "rogchap.com/v8go"
 )
@@ -54,30 +56,30 @@ func ExecuteJsWithConsoleOutput(code string) (string, error) {
 
 }
 
-func executeJavaScriptRedirectOutput(code string) (string, string, error) {
-	// doesnt work
-	// cannot set printfn as a callback for console.log
-	iso := v8.NewIsolate()
-	var sb strings.Builder
-	printfn := v8.NewFunctionTemplate(iso, func(info *v8.FunctionCallbackInfo) *v8.Value {
-		sb.WriteString(fmt.Sprintf("%v", info.Args()))
-		return nil
-	})
-
-	global := v8.NewObjectTemplate(iso)
-	setError := global.Set("console.log", printfn)
-
-	if setError != nil {
-		fmt.Println("setError ", setError)
-	}
-
-	ctx := v8.NewContext(iso, global)
-
-	resultValue, err := ctx.RunScript(code, "main.js")
-
+func RunFunctionWithInputs(submission types.FunctionSubmission, inOutArray []types.InputOutput) {
+	functionCode := fmt.Sprintf(
+		`function %s (%s) {
+	%s
+}`, submission.FunctionName, submission.ParameterString, submission.CodeSubmission)
+	fmt.Println("function to be tested: \n", functionCode)
+	// creates a new V8 context with a new Isolate aka VM
+	ctx := v8.NewContext()
+	// executes a script on the global context
+	_, err := ctx.RunScript(functionCode, "math.js")
 	if err != nil {
-		return "", "", err
+		panic(err)
 	}
 
-	return resultValue.String(), sb.String(), nil
+	for _, inOut := range inOutArray {
+		params := strings.Join(inOut.Input, ", ")
+		val, err := ctx.RunScript(
+			fmt.Sprintf("%s(%s);", submission.FunctionName, params),
+			"main.js",
+		)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("function execution result: %s\n", val)
+		fmt.Printf("expected output: %s\n", inOut.ExpectedOutput)
+	}
 }
