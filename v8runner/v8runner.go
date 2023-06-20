@@ -11,31 +11,6 @@ import (
 	v8 "rogchap.com/v8go"
 )
 
-func ExecuteJavaScript(code string) (string, error) {
-	// for every console.log the logMessages variable gets updated
-	// and is returned in the end
-	iso := v8.NewIsolate()
-
-	ctx := v8.NewContext(iso)
-
-	ctx.RunScript("var logMessages = [];", "main.js")
-	ctx.RunScript("console.log = function() { logMessages.push.apply(logMessages, arguments); };", "main.js")
-
-	_, err := ctx.RunScript(code, "main.js")
-
-	if err != nil {
-		return "", err
-	}
-
-	output, err := ctx.RunScript("logMessages", "main.js")
-
-	if err != nil {
-		return "", err
-	}
-
-	return output.String(), nil
-}
-
 func ExecuteJsWithConsoleOutput(code string) (string, error) {
 	ctx := v8.NewContext()
 
@@ -61,6 +36,7 @@ func RunFunctionWithInputs(submission types.FunctionSubmission, inOutArray []typ
 		`function %s (%s) {
 	%s
 }`, submission.FunctionName, submission.ParameterString, submission.CodeSubmission)
+
 	fmt.Println("function to be tested: \n", functionCode)
 	// creates a new V8 context with a new Isolate aka VM
 	ctx := v8.NewContext()
@@ -82,4 +58,30 @@ func RunFunctionWithInputs(submission types.FunctionSubmission, inOutArray []typ
 		fmt.Printf("function execution result: %s\n", val)
 		fmt.Printf("expected output: %s\n", inOut.ExpectedOutput)
 	}
+}
+
+func ExecuteJavaScript(code string) (string, error) {
+	// for every console.log the logMessages variable gets updated
+	// and is returned in the end
+	// v8console ("go.kuoruan.net/v8go-polyfills/console") should be used instead
+	iso := v8.NewIsolate()
+
+	ctx := v8.NewContext(iso)
+
+	ctx.RunScript("var logMessages = [];", "main.js")
+	ctx.RunScript("console.log = function() { logMessages.push.apply(logMessages, arguments); };", "main.js")
+
+	_, err := ctx.RunScript(code, "main.js")
+
+	if err != nil {
+		return "", err
+	}
+
+	output, err := ctx.RunScript("logMessages", "main.js")
+
+	if err != nil {
+		return "", err
+	}
+
+	return output.String(), nil
 }
