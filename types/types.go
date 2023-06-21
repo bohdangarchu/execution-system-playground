@@ -12,7 +12,6 @@ type FunctionSubmissionOld struct {
 }
 
 // use the types below for the rest api interface
-
 type FunctionSubmission struct {
 	FunctionName string     `json:"functionName"`
 	Code         string     `json:"code"`
@@ -20,26 +19,20 @@ type FunctionSubmission struct {
 }
 
 type TestCase struct {
-	InputArray     []string `json:"input"`
-	ExpectedOutput string   `json:"expectedOutput"`
+	InputArray []Argument `json:"input"`
 }
 
-type Value struct {
-	Value string `json:"value"`
-	Type  string `json:"type"`
+type Argument struct {
+	Value interface{} `json:"value"`
+	Type  string      `json:"type"`
 }
 
 type TestResult struct {
 	TestCase     TestCase        `json:"testCase"`
 	ActualOutput ExecutionOutput `json:"actualOutput"`
-	Status       string          `json:"status"`
-}
-
-type ExecutionResult struct {
-	Results []TestResult `json:"results"`
 }
 
 type ExecutionOutput struct {
-	Value string `json:"value"`
-	Error string `json:"error"`
+	Output Argument `json:"output"`
+	Error  string   `json:"error"`
 }
