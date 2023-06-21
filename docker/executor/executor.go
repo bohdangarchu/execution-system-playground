@@ -7,7 +7,7 @@ import (
 	v8 "rogchap.com/v8go"
 )
 
-func RunFunctionWithInputs(submission types.FunctionSubmission) []types.ExecutionOutput {
+func RunFunctionWithInputs(submission types.FunctionSubmission) []types.TestResult {
 
 	fmt.Println("function to be executed: \n", submission.Code)
 	// creates a new V8 context with a new Isolate aka VM
@@ -34,7 +34,7 @@ func RunFunctionWithInputs(submission types.FunctionSubmission) []types.Executio
 		panic(err)
 	}
 
-	results := make([]types.ExecutionOutput, len(submission.TestCases))
+	results := make([]types.TestResult, len(submission.TestCases))
 	for i, testCase := range submission.TestCases {
 		// TODO add error handling
 		values := make([]v8.Valuer, len(testCase.InputArray))
@@ -46,17 +46,23 @@ func RunFunctionWithInputs(submission types.FunctionSubmission) []types.Executio
 		val, err := function.Call(ctx.Global(), values...)
 		if err != nil {
 			// If an error occurs, create an ExecutionOutput object with the error message
-			results[i] = types.ExecutionOutput{
-				Value: types.Argument{},
-				Error: err.Error(),
+			results[i] = types.TestResult{
+				TestCase: testCase,
+				ActualOutput: types.ExecutionOutput{
+					Output: types.Argument{},
+					Error:  err.Error(),
+				},
 			}
 			continue
 		}
 
 		// If no error occurs, create an ExecutionOutput object with the actual output value
-		results[i] = types.ExecutionOutput{
-			Value: v8ValueToArgument(*val),
-			Error: "",
+		results[i] = types.TestResult{
+			TestCase: testCase,
+			ActualOutput: types.ExecutionOutput{
+				Output: v8ValueToArgument(*val),
+				Error:  "",
+			},
 		}
 
 	}

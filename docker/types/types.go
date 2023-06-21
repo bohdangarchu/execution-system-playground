@@ -18,14 +18,9 @@ type Argument struct {
 type TestResult struct {
 	TestCase     TestCase        `json:"testCase"`
 	ActualOutput ExecutionOutput `json:"actualOutput"`
-	Status       string          `json:"status"`
-}
-
-type ExecutionResult struct {
-	Results []TestResult `json:"results"`
 }
 
 type ExecutionOutput struct {
-	Value Argument `json:"value"`
-	Error string   `json:"error"`
+	Output Argument `json:"output"`
+	Error  string   `json:"error"`
 }
