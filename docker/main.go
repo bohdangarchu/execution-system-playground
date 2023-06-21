@@ -10,7 +10,6 @@ import (
 )
 
 func handleRequest(w http.ResponseWriter, r *http.Request) {
-	// Parse the request JSON body
 	var functionSubmission types.FunctionSubmission
 	err := json.NewDecoder(r.Body).Decode(&functionSubmission)
 	if err != nil {
@@ -22,23 +21,8 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	// Execute the JavaScript code
 	outputArray := executor.RunFunctionWithInputs(functionSubmission)
 
-	results := make([]types.TestResult, len(functionSubmission.TestCases))
-	status := ""
-
-	for i, testCase := range functionSubmission.TestCases {
-		status = "Fail"
-		if outputArray[i].Value == testCase.ExpectedOutput {
-			status = "Pass"
-		}
-		results[i] = types.TestResult{
-			TestCase:     testCase,
-			ActualOutput: outputArray[i],
-			Status:       status,
-		}
-	}
-
 	// Convert the result to JSON
-	responseJSON, err := json.Marshal(results)
+	responseJSON, err := json.Marshal(outputArray)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to convert result to JSON: %v", err), http.StatusInternalServerError)
 		return

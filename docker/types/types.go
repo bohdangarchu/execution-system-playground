@@ -7,13 +7,12 @@ type FunctionSubmission struct {
 }
 
 type TestCase struct {
-	InputArray     []string `json:"input"`
-	ExpectedOutput string   `json:"expectedOutput"`
+	InputArray []Argument `json:"input"`
 }
 
-type Value struct {
-	Value string `json:"value"`
-	Type  string `json:"type"`
+type Argument struct {
+	Value interface{} `json:"value"`
+	Type  string      `json:"type"`
 }
 
 type TestResult struct {
@@ -27,6 +26,6 @@ type ExecutionResult struct {
 }
 
 type ExecutionOutput struct {
-	Value string `json:"value"`
-	Error string `json:"error"`
+	Value Argument `json:"value"`
+	Error string   `json:"error"`
 }

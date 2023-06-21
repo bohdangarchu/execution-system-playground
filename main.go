@@ -23,7 +23,7 @@ func main() {
 }
 
 func testRunFunctionWithInputs() {
-	subm := types.FunctionSubmission{
+	subm := types.FunctionSubmissionOld{
 		FunctionName:    "add",
 		ParameterString: "a, b",
 		CodeSubmission:  "return a + b",

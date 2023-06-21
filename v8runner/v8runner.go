@@ -31,7 +31,7 @@ func ExecuteJsWithConsoleOutput(code string) (string, error) {
 
 }
 
-func RunFunctionWithInputs(submission types.FunctionSubmission, inOutArray []types.InputOutput) {
+func RunFunctionWithInputs(submission types.FunctionSubmissionOld, inOutArray []types.InputOutput) {
 	functionCode := fmt.Sprintf(
 		`function %s (%s) {
 	%s
