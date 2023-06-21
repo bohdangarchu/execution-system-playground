@@ -11,6 +11,11 @@ type TestCase struct {
 	ExpectedOutput string   `json:"expectedOutput"`
 }
 
+type Value struct {
+	Value string `json:"value"`
+	Type  string `json:"type"`
+}
+
 type TestResult struct {
 	TestCase     TestCase        `json:"testCase"`
 	ActualOutput ExecutionOutput `json:"actualOutput"`
@@ -23,5 +28,5 @@ type ExecutionResult struct {
 
 type ExecutionOutput struct {
 	Value string `json:"value"`
-	Error string `json:"error,omitempty"`
+	Error string `json:"error"`
 }
