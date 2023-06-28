@@ -4,6 +4,8 @@ import (
 	"context"
 	"net"
 
+	"github.com/docker/docker/client"
+
 	"github.com/firecracker-microvm/firecracker-go-sdk"
 )
 
@@ -44,10 +46,16 @@ type ExecutionOutput struct {
 	Error  string   `json:"error"`
 }
 
-type RunningFirecracker struct {
+type FirecrackerVM struct {
 	VmmCtx    context.Context
 	VmmCancel context.CancelFunc
 	VmmID     string
 	Machine   *firecracker.Machine
 	Ip        net.IP
+}
+
+type DockerContainer struct {
+	ContainerId string
+	Cli         *client.Client
+	Ctx         context.Context
 }
