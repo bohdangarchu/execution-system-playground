@@ -12,36 +12,24 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-func RunExecutionServerInDocker() error {
-	dockerContainer, err := StartExecutionServerInDocker()
-
-	if err != nil {
-		return err
-	}
-
-	// Wait for the container to stop
-	statusCh, errCh := dockerContainer.Cli.ContainerWait(
-		dockerContainer.Ctx,
-		dockerContainer.ContainerId,
-		container.WaitConditionNotRunning,
-	)
-	select {
-	case err := <-errCh:
-		if err != nil {
-			return err
-		}
-	case <-statusCh:
-	}
-
+func RetrieveLogsFromDockerContainer(dockerContainer *types.DockerContainer) (string, error) {
 	// Retrieve the logs of the container
 	out, err := dockerContainer.Cli.ContainerLogs(
 		dockerContainer.Ctx, dockerContainer.ContainerId,
 		dockertypes.ContainerLogsOptions{ShowStdout: true, ShowStderr: true},
 	)
 	bytes, err := ioutil.ReadAll(out)
-	fmt.Println("Execution Server Logs:")
-	fmt.Println(string(bytes))
-	return err
+	return string(bytes), err
+}
+
+func KillDockerContainer(dockerContainer *types.DockerContainer) error {
+	// to not wait for the container to exit gracefully
+	noWaitTimeout := 0
+	return dockerContainer.Cli.ContainerStop(
+		dockerContainer.Ctx,
+		dockerContainer.ContainerId,
+		container.StopOptions{Timeout: &noWaitTimeout},
+	)
 }
 
 func StartExecutionServerInDocker() (*types.DockerContainer, error) {

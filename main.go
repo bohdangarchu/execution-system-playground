@@ -1,16 +1,11 @@
 package main
 
-import (
-	"app/docrunner"
-	"fmt"
-)
+import "app/performance"
 
 func main() {
 	// firerunner.RunFirecracker()
 
-	err := docrunner.RunExecutionServerInDocker()
-
-	fmt.Println("err: ", err)
+	performance.TimeDockerStartup()
 
 	// code := "function square(a) { return a*a; } console.log(square(55));"
 	// output, err := v8runner.ExecuteJsWithConsoleOutput(code)

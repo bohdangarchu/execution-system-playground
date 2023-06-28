@@ -1,6 +1,7 @@
 package performance
 
 import (
+	"app/docrunner"
 	"app/types"
 	"app/v8runner"
 	"bytes"
@@ -38,10 +39,9 @@ func TestPerformance() {
 	outputV8, timeV8 := ExecuteWithTime(jsonSubmission, executeJSONSubmissionUsingV8)
 	fmt.Println("output v8: ", outputV8)
 	fmt.Println("time v8: ", timeV8)
-	outputDocker, timeDocker := ExecuteWithTime(jsonSubmission, executeJSONSubmissionUsingDocker)
+	outputDocker, timeDocker := ExecuteWithTime(jsonSubmission, ExecuteJSONSubmissionUsingDocker)
 	fmt.Println("output docker: ", outputDocker)
 	fmt.Println("time docker: ", timeDocker)
-
 }
 
 func ExecuteWithTime(input string, fn StringFunction) (string, time.Duration) {
@@ -51,7 +51,33 @@ func ExecuteWithTime(input string, fn StringFunction) (string, time.Duration) {
 	return output, executionTime
 }
 
-func executeJSONSubmissionUsingDocker(jsonSubmission string) string {
+func TimeDockerStartup() error {
+	startTime := time.Now()
+	// time the execution
+	dockerContainer, err := docrunner.StartExecutionServerInDocker()
+	if err != nil {
+		return err
+	}
+	executionTime := time.Since(startTime)
+	fmt.Println("Execution Server started in Docker in: ", executionTime)
+
+	// kill the container
+	err = docrunner.KillDockerContainer(dockerContainer)
+	if err != nil {
+		return err
+	}
+
+	// Retrieve the logs of the container
+	logs, err := docrunner.RetrieveLogsFromDockerContainer(dockerContainer)
+	if err != nil {
+		return err
+	}
+	fmt.Println("logs: ", logs)
+
+	return err
+}
+
+func ExecuteJSONSubmissionUsingDocker(jsonSubmission string) string {
 	url := "http://localhost:8080"
 
 	// Create a request body as a bytes.Buffer
