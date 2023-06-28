@@ -11,28 +11,36 @@ import (
 
 func RunFirecracker() {
 	firecracker_bin_path := "/home/bohdan/software/firecracker/build/cargo_target/x86_64-unknown-linux-musl/debug/firecracker"
-	rootDrivePath := "/home/bohdan/workspace/uni/thesis/firecracker/hello-rootfs.ext4"
-	kernelImagePath := "/home/bohdan/workspace/uni/thesis/firecracker/hello-vmlinux.bin"
-	socket_path := "/home/bohdan/workspace/uni/thesis/firecracker/ficracker.socket"
+	rootDrivePath := "/home/bohdan/workspace/uni/thesis/firecracker-go-demo/firecracker-go-template/my_root_fs"
+	kernelImagePath := "/tmp/hello-vmlinux.bin"
+	socket_path := "/home/bohdan/workspace/uni/thesis/firecracker-cmd-basic-setup/ficracker.socket"
 	var cpu_count int64 = 1
 	var mem_size_mib int64 = 512
 	logger := log.New()
 	ctx := context.Background()
 	vmmCtx, vmmCancel := context.WithCancel(ctx)
 	defer vmmCancel()
-	devices := []models.Drive{}
-	rootDrive := models.Drive{
-		DriveID:      firecracker.String("1"),
-		PathOnHost:   &rootDrivePath,
-		IsRootDevice: firecracker.Bool(true),
-		IsReadOnly:   firecracker.Bool(false),
+	drives := []models.Drive{
+		{
+			DriveID:      firecracker.String("1"),
+			PathOnHost:   &rootDrivePath,
+			IsRootDevice: firecracker.Bool(true),
+			IsReadOnly:   firecracker.Bool(false),
+		},
 	}
-	devices = append(devices, rootDrive)
 	fcCfg := firecracker.Config{
 		SocketPath:      socket_path,
 		KernelImagePath: kernelImagePath,
-		KernelArgs:      "console=ttyS0 reboot=k panic=1 pci=off",
-		Drives:          devices,
+		KernelArgs:      "console=ttyS0 noapic reboot=k panic=1 pci=off nomodules rw",
+		Drives:          drives,
+		NetworkInterfaces: []firecracker.NetworkInterface{
+			{
+				StaticConfiguration: &firecracker.StaticNetworkConfiguration{
+					MacAddress:  "2e:d5:b6:27:e8:8a",
+					HostDevName: "tap0",
+				},
+			},
+		},
 		MachineCfg: models.MachineConfiguration{
 			VcpuCount:   &cpu_count,
 			CPUTemplate: models.CPUTemplate("C3"),

@@ -44,13 +44,9 @@ func TestPerformance() {
 
 }
 
-// Function to execute a given function and measure execution time
 func ExecuteWithTime(input string, fn StringFunction) (string, time.Duration) {
 	startTime := time.Now()
-
-	// Execute the provided function with the input string
 	output := fn(input)
-
 	executionTime := time.Since(startTime)
 	return output, executionTime
 }
