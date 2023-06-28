@@ -1,5 +1,12 @@
 package types
 
+import (
+	"context"
+	"net"
+
+	"github.com/firecracker-microvm/firecracker-go-sdk"
+)
+
 type InputOutput struct {
 	Input          []string
 	ExpectedOutput string
@@ -35,4 +42,12 @@ type TestResult struct {
 type ExecutionOutput struct {
 	Output Argument `json:"output"`
 	Error  string   `json:"error"`
+}
+
+type RunningFirecracker struct {
+	VmmCtx    context.Context
+	VmmCancel context.CancelFunc
+	VmmID     string
+	Machine   *firecracker.Machine
+	Ip        net.IP
 }

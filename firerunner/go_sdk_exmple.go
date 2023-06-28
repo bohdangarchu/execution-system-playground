@@ -29,18 +29,11 @@ func RunFirecracker() {
 		},
 	}
 	fcCfg := firecracker.Config{
-		SocketPath:      socket_path,
-		KernelImagePath: kernelImagePath,
-		KernelArgs:      "console=ttyS0 noapic reboot=k panic=1 pci=off nomodules rw",
-		Drives:          drives,
-		NetworkInterfaces: []firecracker.NetworkInterface{
-			{
-				StaticConfiguration: &firecracker.StaticNetworkConfiguration{
-					MacAddress:  "2e:d5:b6:27:e8:8a",
-					HostDevName: "tap0",
-				},
-			},
-		},
+		SocketPath:        socket_path,
+		KernelImagePath:   kernelImagePath,
+		KernelArgs:        "console=ttyS0 noapic reboot=k panic=1 pci=off nomodules rw",
+		Drives:            drives,
+		NetworkInterfaces: getStaticNetworkInterfaces(),
 		MachineCfg: models.MachineConfiguration{
 			VcpuCount:   &cpu_count,
 			CPUTemplate: models.CPUTemplate("C3"),
@@ -72,4 +65,25 @@ func RunFirecracker() {
 		log.Fatalf("Wait returned an error %s", err)
 	}
 	log.Printf("Start machine was happy")
+}
+
+func getCNINetworkInterfaces() []firecracker.NetworkInterface {
+	return []firecracker.NetworkInterface{{
+		// Use CNI to get dynamic IP
+		CNIConfiguration: &firecracker.CNIConfiguration{
+			NetworkName: "fcnet",
+			IfName:      "veth0",
+		},
+	}}
+}
+
+func getStaticNetworkInterfaces() []firecracker.NetworkInterface {
+	return []firecracker.NetworkInterface{
+		{
+			StaticConfiguration: &firecracker.StaticNetworkConfiguration{
+				MacAddress:  "2e:d5:b6:27:e8:8a",
+				HostDevName: "tap0",
+			},
+		},
+	}
 }
