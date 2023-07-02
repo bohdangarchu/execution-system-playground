@@ -12,72 +12,76 @@ import (
 	"time"
 )
 
-type StringFunction func(string) string
-
-func TestPerformance() {
-	// compares v8 with v8 in docker
-	jsonSubmission := `
-	{
-		"functionName": "addTwoNumbers",
-		"code": "function addTwoNumbers(a, b) {\n  return a + b;\n}",
-		"testCases": [
+var jsonSubmission = `
+{
+	"functionName": "addTwoNumbers",
+	"code": "function addTwoNumbers(a, b) {\n  return a + b;\n}",
+	"testCases": [
+	  {
+		"input": [
 		  {
-			"input": [
-			  {
-				"value": 3,
-				"type": "number"
-			  },
-			  {
-				"value": -10,
-				"type": "number"
-			  }
-			]
+			"value": 3,
+			"type": "number"
+		  },
+		  {
+			"value": -10,
+			"type": "number"
 		  }
 		]
 	  }
-	`
-	outputV8, timeV8 := ExecuteWithTime(jsonSubmission, executeJSONSubmissionUsingV8)
+	]
+  }
+`
+
+type StringFunction func(string) (string, error)
+
+func TestPerformance() {
+	// compares v8 with v8 in docker
+	outputV8, errV8, timeV8 := ExecuteWithTime(jsonSubmission, executeJSONSubmissionUsingV8)
+	if errV8 != nil {
+		panic(errV8)
+	}
 	fmt.Println("output v8: ", outputV8)
 	fmt.Println("time v8: ", timeV8)
-	outputDocker, timeDocker := ExecuteWithTime(jsonSubmission, ExecuteJSONSubmissionUsingDocker)
+	outputDocker, errDocker, timeDocker := ExecuteWithTime(jsonSubmission, ExecuteJSONSubmissionUsingDocker)
+	if errDocker != nil {
+		panic(errDocker)
+	}
 	fmt.Println("output docker: ", outputDocker)
 	fmt.Println("time docker: ", timeDocker)
 }
 
-func ExecuteWithTime(input string, fn StringFunction) (string, time.Duration) {
+func ExecuteWithTime(input string, fn StringFunction) (string, error, time.Duration) {
 	startTime := time.Now()
-	output := fn(input)
+	output, err := fn(input)
 	executionTime := time.Since(startTime)
-	return output, executionTime
+	return output, err, executionTime
 }
 
-func TimeDockerStartup() error {
+func TimeDockerStartupAndSubmission() error {
 	startTime := time.Now()
 	// time the execution
 	dockerContainer, err := docrunner.StartExecutionServerInDocker()
 	if err != nil {
 		return err
 	}
+	defer killContainerAndGetLogs(dockerContainer)
 	executionTime := time.Since(startTime)
 	fmt.Println("Execution Server started in Docker in: ", executionTime)
 
-	// kill the container
-	err = docrunner.KillDockerContainer(dockerContainer)
-	if err != nil {
-		return err
-	}
+	// time.Sleep(50 * time.Millisecond)
 
-	// Retrieve the logs of the container
-	logs, err := docrunner.RetrieveLogsFromDockerContainer(dockerContainer)
-	if err != nil {
-		return err
+	outputDocker, errDocker, timeDocker := ExecuteWithTime(jsonSubmission, ExecuteJSONSubmissionUsingDocker)
+	if errDocker != nil {
+		panic(errDocker)
 	}
-	fmt.Println("logs: ", logs)
+	fmt.Println("output docker: ", outputDocker)
+	fmt.Println("time docker: ", timeDocker)
 
 	return err
 }
 
-func ExecuteJSONSubmissionUsingDocker(jsonSubmission string) string {
+func ExecuteJSONSubmissionUsingDocker(jsonSubmission string) (string, error) {
 	url := "http://localhost:8080"
 
 	// Create a request body as a bytes.Buffer
@@ -86,29 +90,29 @@ func ExecuteJSONSubmissionUsingDocker(jsonSubmission string) string {
 	// Make the POST request
 	resp, err := http.Post(url, "application/json", requestBody)
 	if err != nil {
-		panic(fmt.Sprintf("Error making POST request: %v", err))
+		return "", fmt.Errorf("failed to make POST request: %v", err)
 	}
 	defer resp.Body.Close()
 
 	// Check the response status code
 	if resp.StatusCode != http.StatusOK {
-		panic(fmt.Sprintf("Received non-OK response: %v", resp.Status))
+		return "", fmt.Errorf("bad response status code: %d", resp.StatusCode)
 	}
 
 	// Read the response body
 	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(fmt.Sprintf("Error reading response body: %v", err))
+		return "", fmt.Errorf("failed to read response body: %v", err)
 	}
 
-	return string(responseBody)
+	return string(responseBody), nil
 }
 
-func executeJSONSubmissionUsingV8(jsonSubmission string) string {
+func executeJSONSubmissionUsingV8(jsonSubmission string) (string, error) {
 	var functionSubmission types.FunctionSubmission
 	err := json.Unmarshal([]byte(jsonSubmission), &functionSubmission)
 	if err != nil {
-		panic(fmt.Sprintf("Error decoding JSON: %v", err))
+		return "", fmt.Errorf("failed to unmarshal json: %v", err)
 	}
 
 	// Execute the JavaScript code
@@ -117,7 +121,22 @@ func executeJSONSubmissionUsingV8(jsonSubmission string) string {
 	// Convert the result to JSON
 	responseJSON, err := json.Marshal(outputArray)
 	if err != nil {
-		panic(fmt.Sprintf("failed to convert result to JSON: %v", err))
+		return "", fmt.Errorf("failed to marshal response: %v", err)
 	}
-	return string(responseJSON)
+	return string(responseJSON), nil
+}
+
+func killContainerAndGetLogs(dockerContainer *types.DockerContainer) {
+	// kill the container
+	err := docrunner.KillDockerContainer(dockerContainer)
+	if err != nil {
+		panic(err)
+	}
+
+	// Retrieve the logs of the container
+	logs, err := docrunner.RetrieveLogsFromDockerContainer(dockerContainer)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("logs: ", logs)
 }

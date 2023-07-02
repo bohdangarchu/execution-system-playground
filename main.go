@@ -5,7 +5,10 @@ import "app/performance"
 func main() {
 	// firerunner.RunFirecracker()
 
-	performance.TimeDockerStartup()
+	err := performance.TimeDockerStartupAndSubmission()
+	if err != nil {
+		panic(err)
+	}
 
 	// code := "function square(a) { return a*a; } console.log(square(55));"
 	// output, err := v8runner.ExecuteJsWithConsoleOutput(code)

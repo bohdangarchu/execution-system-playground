@@ -5,9 +5,11 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
@@ -41,12 +43,12 @@ func StartExecutionServerInDocker() (*types.DockerContainer, error) {
 
 	// Initialize Docker client
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	// TODO cli is used later so maybe don't defer close
 	defer cli.Close() // Close the Docker client when function returns
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a container with a volume mount to write the script file inside the container
 	resp, err := cli.ContainerCreate(
 		ctx,
 		&container.Config{
@@ -75,11 +77,35 @@ func StartExecutionServerInDocker() (*types.DockerContainer, error) {
 		return nil, err
 	}
 
+	waitForContainerRunning(cli, resp.ID)
+
 	return &types.DockerContainer{
 		ContainerId: resp.ID,
 		Cli:         cli,
 		Ctx:         ctx,
 	}, nil
+}
+
+func waitForContainerRunning(cli *client.Client, containerID string) {
+	ctx := context.Background()
+	filterArgs := filters.NewArgs()
+	filterArgs.Add("id", containerID)
+	filterArgs.Add("status", "running")
+	options := dockertypes.ContainerListOptions{Filters: filterArgs}
+
+	for {
+		containers, err := cli.ContainerList(ctx, options)
+		if err != nil {
+			panic(err)
+		}
+
+		if len(containers) > 0 {
+			break
+		}
+
+		// Sleep for a short duration before checking again
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func RunJsInDocker(jsCode string) (string, error) {
