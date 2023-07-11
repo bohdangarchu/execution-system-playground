@@ -18,7 +18,7 @@ import (
 const FIRECRACKER_BIN_PATH = "/home/bohdan/software/firecracker/build/cargo_target/x86_64-unknown-linux-musl/debug/firecracker"
 const KERNEL_IMAGE_PATH = "/home/bohdan/workspace/assets/hello-vmlinux.bin"
 
-func StartVM() {
+func RunSubmissionInsideVM(jsonSubmission string) string {
 	startTime := time.Now()
 	logger := log.New()
 	vmID := xid.New().String()
@@ -49,22 +49,18 @@ func StartVM() {
 	executionTime := time.Since(startTime)
 	log.Printf("VM started in: %s", executionTime)
 
-	out, err := executeJSONSubmissionInVM(
+	result, err := executeJSONSubmissionInVM(
 		vm.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP.String(),
+		jsonSubmission,
 	)
 	if err != nil {
 		log.Printf("Failed to execute JSON submission in VM: %v", err)
 	}
-	log.Printf("out: %s", out)
 
-	time.Sleep(10 * time.Second)
+	// time.Sleep(2 * time.Second)
 	vm.StopVMM()
-
-	// wait for the VMM to exit
-	// if err := vm.Wait(vmmCtx); err != nil {
-	// 	log.Fatalf("Wait returned an error %s", err)
-	// }
 	log.Printf("Start machine was happy")
+	return result
 }
 
 func getCNINetworkInterfaces() []firecracker.NetworkInterface {
@@ -88,27 +84,7 @@ func getStaticNetworkInterfaces() []firecracker.NetworkInterface {
 	}
 }
 
-func executeJSONSubmissionInVM(ip string) (string, error) {
-	jsonSubmission := `
-	{
-		"functionName": "addTwoNumbers",
-		"code": "function addTwoNumbers(a, b) {\n  return a + b;\n}",
-		"testCases": [
-		  {
-			"input": [
-			  {
-				"value": 3,
-				"type": "number"
-			  },
-			  {
-				"value": -10,
-				"type": "number"
-			  }
-			]
-		  }
-		]
-	  }
-	`
+func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error) {
 	url := "http://" + ip + ":8080/execute"
 
 	// Create a request body as a bytes.Buffer
