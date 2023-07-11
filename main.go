@@ -1,14 +1,16 @@
 package main
 
-import "app/performance"
+import (
+	"app/firerunner"
+)
 
 func main() {
-	// firerunner.RunFirecracker()
+	firerunner.StartVM()
 
-	err := performance.TimeDockerStartupAndSubmission()
-	if err != nil {
-		panic(err)
-	}
+	// err := performance.TimeDockerStartupAndSubmission()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	// code := "function square(a) { return a*a; } console.log(square(55));"
 	// output, err := v8runner.ExecuteJsWithConsoleOutput(code)

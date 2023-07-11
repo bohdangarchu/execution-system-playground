@@ -76,7 +76,7 @@ func TimeDockerStartupAndSubmission() error {
 		panic(errDocker)
 	}
 	fmt.Println("output docker: ", outputDocker)
-	fmt.Println("time docker: ", timeDocker)
+	fmt.Println("execution time docker: ", timeDocker)
 
 	return err
 }
