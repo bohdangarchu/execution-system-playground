@@ -2,7 +2,6 @@ package main
 
 import (
 	"app/firerunner"
-	"fmt"
 )
 
 var jsonSubmission = `
@@ -27,21 +26,14 @@ var jsonSubmission = `
 `
 
 func main() {
-	result := firerunner.RunSubmissionInsideVM(jsonSubmission)
-	fmt.Println("result: ", result)
+	// result := firerunner.RunSubmissionInsideVM(jsonSubmission)
+	// fmt.Println("result: ", result)
 
 	// err := performance.TimeDockerStartupAndSubmission()
 	// if err != nil {
 	// 	panic(err)
 	// }
 
-	// code := "function square(a) { return a*a; } console.log(square(55));"
-	// output, err := v8runner.ExecuteJsWithConsoleOutput(code)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Println("out: ", output)
+	firerunner.RunFirecrackerVM()
 
-	// testPerformance()
-	// performance.TestPerformance()
 }
