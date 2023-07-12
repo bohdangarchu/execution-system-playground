@@ -4,26 +4,34 @@ import (
 	"app/docrunner"
 	"app/firerunner"
 	"app/types"
+	"app/v8runner"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 )
 
-type Executor interface {
-	RunFunctionSubmission(functionSubmission types.FunctionSubmission) []string
-}
+const (
+	firecracker = iota
+	docker
+	v8
+)
 
 func handleRequestWithFirecracker(w http.ResponseWriter, r *http.Request) {
-	var functionSubmission types.FunctionSubmission
-	err := json.NewDecoder(r.Body).Decode(&functionSubmission)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to parse request body: %v", err), http.StatusBadRequest)
-		log.Println(fmt.Sprintf("failed to parse request body: %v", r.Body))
-		return
-	}
+	// get json string from request body
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r.Body)
+	jsonSubmission := buf.String()
 
-	jsonSubmission, err := json.Marshal(functionSubmission)
+	// var functionSubmission types.FunctionSubmission
+	// err := json.NewDecoder(r.Body).Decode(&functionSubmission)
+	// if err != nil {
+	// 	http.Error(w, fmt.Sprintf("failed to parse request body: %v", err), http.StatusBadRequest)
+	// 	log.Println(fmt.Sprintf("failed to parse request body: %v", r.Body))
+	// 	return
+	// }
+	// jsonSubmission, err := json.Marshal(functionSubmission)
 	responseString := firerunner.RunSubmissionInsideVM(string(jsonSubmission))
 	responseJSON := []byte(responseString)
 
@@ -39,10 +47,10 @@ func handleRequestWithFirecracker(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(responseJSON)
 }
 
-func Run(option string) {
-	if option == "docker" {
+func Run(option int) {
+	if option == docker {
 		http.HandleFunc("/", handleRequestWithDocker)
-	} else if option == "firecracker" {
+	} else if option == firecracker {
 		http.HandleFunc("/", handleRequestWithFirecracker)
 	} else {
 		http.HandleFunc("/", handleRequestWithV8)
@@ -82,16 +90,14 @@ func handleRequestWithV8(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonSubmission, err := json.Marshal(functionSubmission)
-	responseString := firerunner.RunSubmissionInsideVM(string(jsonSubmission))
-	responseJSON := []byte(responseString)
+	outputArray := v8runner.RunFunctionWithInputs(functionSubmission)
 
 	// Convert the result to JSON
-	// responseJSON, err := json.Marshal(outputArray)
-	// if err != nil {
-	// 	http.Error(w, fmt.Sprintf("failed to convert result to JSON: %v", err), http.StatusInternalServerError)
-	// 	return
-	// }
+	responseJSON, err := json.Marshal(outputArray)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to convert result to JSON: %v", err), http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

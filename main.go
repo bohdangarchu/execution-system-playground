@@ -25,8 +25,14 @@ var jsonSubmission = `
   }
 `
 
+const (
+	firecracker = iota
+	docker
+	v8
+)
+
 func main() {
-	api.Run("docker")
+	api.Run(firecracker)
 
 	// err := performance.TimeDockerStartupAndSubmission()
 	// if err != nil {
