@@ -50,6 +50,7 @@ func RunSubmissionInsideVM(jsonSubmission string) string {
 	log.Printf("VM started in: %s", &bootTime)
 	bootTimeStamp := time.Now()
 
+	// for some reason takes >1s
 	result, err := executeJSONSubmissionInVM(
 		vm.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP.String(),
 		jsonSubmission,
@@ -87,6 +88,18 @@ func getStaticNetworkInterfaces() []firecracker.NetworkInterface {
 	}
 }
 
+func getDrives() []models.Drive {
+	root_drive_path := "/home/bohdan/workspace/uni/thesis/codebench-reference-project/agent/rootfs.ext4"
+	return []models.Drive{
+		{
+			DriveID:      firecracker.String("1"),
+			PathOnHost:   &root_drive_path,
+			IsRootDevice: firecracker.Bool(true),
+			IsReadOnly:   firecracker.Bool(false),
+		},
+	}
+}
+
 func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error) {
 	url := "http://" + ip + ":8080/execute"
 
@@ -112,18 +125,6 @@ func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error)
 	}
 
 	return string(responseBody), nil
-}
-
-func getDrives() []models.Drive {
-	root_drive_path := "/home/bohdan/workspace/uni/thesis/codebench-reference-project/agent/rootfs.ext4"
-	return []models.Drive{
-		{
-			DriveID:      firecracker.String("1"),
-			PathOnHost:   &root_drive_path,
-			IsRootDevice: firecracker.Bool(true),
-			IsReadOnly:   firecracker.Bool(false),
-		},
-	}
 }
 
 func getVMConfig(vmID string) firecracker.Config {
