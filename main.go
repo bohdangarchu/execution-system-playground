@@ -1,8 +1,7 @@
 package main
 
 import (
-	"app/firerunner"
-	"fmt"
+	"app/api"
 )
 
 var jsonSubmission = `
@@ -27,8 +26,7 @@ var jsonSubmission = `
 `
 
 func main() {
-	result := firerunner.RunSubmissionInsideVM(jsonSubmission)
-	fmt.Println("result: ", result)
+	api.Run()
 
 	// err := performance.TimeDockerStartupAndSubmission()
 	// if err != nil {
