@@ -24,23 +24,8 @@ func handleRequestWithFirecracker(w http.ResponseWriter, r *http.Request) {
 	buf.ReadFrom(r.Body)
 	jsonSubmission := buf.String()
 
-	// var functionSubmission types.FunctionSubmission
-	// err := json.NewDecoder(r.Body).Decode(&functionSubmission)
-	// if err != nil {
-	// 	http.Error(w, fmt.Sprintf("failed to parse request body: %v", err), http.StatusBadRequest)
-	// 	log.Println(fmt.Sprintf("failed to parse request body: %v", r.Body))
-	// 	return
-	// }
-	// jsonSubmission, err := json.Marshal(functionSubmission)
-	responseString := firerunner.RunSubmissionInsideVM(string(jsonSubmission))
+	responseString := firerunner.RunSubmissionInsideVM(jsonSubmission)
 	responseJSON := []byte(responseString)
-
-	// Convert the result to JSON
-	// responseJSON, err := json.Marshal(outputArray)
-	// if err != nil {
-	// 	http.Error(w, fmt.Sprintf("failed to convert result to JSON: %v", err), http.StatusInternalServerError)
-	// 	return
-	// }
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

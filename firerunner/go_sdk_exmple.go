@@ -19,7 +19,7 @@ const FIRECRACKER_BIN_PATH = "/home/bohdan/software/firecracker/build/cargo_targ
 const KERNEL_IMAGE_PATH = "/home/bohdan/workspace/assets/hello-vmlinux.bin"
 
 func RunSubmissionInsideVM(jsonSubmission string) string {
-	startTime := time.Now()
+	startTimeStamp := time.Now()
 	logger := log.New()
 	vmID := xid.New().String()
 	fcCfg := getVMConfig(vmID)
@@ -46,8 +46,9 @@ func RunSubmissionInsideVM(jsonSubmission string) string {
 	if err := vm.Start(vmmCtx); err != nil {
 		log.Fatalf("Failed to start machine: %v", err)
 	}
-	executionTime := time.Since(startTime)
-	log.Printf("VM started in: %s", executionTime)
+	bootTime := time.Since(startTimeStamp)
+	log.Printf("VM started in: %s", &bootTime)
+	bootTimeStamp := time.Now()
 
 	result, err := executeJSONSubmissionInVM(
 		vm.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP.String(),
@@ -56,6 +57,8 @@ func RunSubmissionInsideVM(jsonSubmission string) string {
 	if err != nil {
 		log.Printf("Failed to execute JSON submission in VM: %v", err)
 	}
+	executionTime := time.Since(bootTimeStamp)
+	log.Printf("Submission executed in: %s", executionTime)
 
 	// time.Sleep(30 * time.Second)
 	vm.StopVMM()
