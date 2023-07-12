@@ -57,7 +57,7 @@ func RunSubmissionInsideVM(jsonSubmission string) string {
 		log.Printf("Failed to execute JSON submission in VM: %v", err)
 	}
 
-	// time.Sleep(2 * time.Second)
+	// time.Sleep(30 * time.Second)
 	vm.StopVMM()
 	log.Printf("Start machine was happy")
 	return result
@@ -126,7 +126,7 @@ func getDrives() []models.Drive {
 func getVMConfig(vmID string) firecracker.Config {
 	socket_path := GetSocketPath(vmID)
 	var cpu_count int64 = 1
-	var mem_size_mib int64 = 512
+	var mem_size_mib int64 = 100
 	drives := getDrives()
 	return firecracker.Config{
 		SocketPath:        socket_path,

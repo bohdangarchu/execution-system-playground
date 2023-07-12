@@ -69,6 +69,7 @@ func TimeDockerStartupAndSubmission() error {
 	executionTime := time.Since(startTime)
 	fmt.Println("Execution Server started in Docker in: ", executionTime)
 
+	// sometimes the docker container is not ready to receive requests
 	// time.Sleep(50 * time.Millisecond)
 
 	outputDocker, errDocker, timeDocker := ExecuteWithTime(jsonSubmission, ExecuteJSONSubmissionUsingDocker)
