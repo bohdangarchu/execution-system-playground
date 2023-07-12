@@ -12,6 +12,7 @@ import (
 func handleRequest(w http.ResponseWriter, r *http.Request) {
 	var functionSubmission types.FunctionSubmission
 	err := json.NewDecoder(r.Body).Decode(&functionSubmission)
+	fmt.Println("received submission: " + functionSubmission)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse request body: %v", err), http.StatusBadRequest)
 		log.Println(fmt.Sprintf("failed to parse request body: %v", r.Body))

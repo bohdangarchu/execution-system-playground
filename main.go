@@ -26,7 +26,7 @@ var jsonSubmission = `
 `
 
 func main() {
-	api.Run()
+	api.Run("docker")
 
 	// err := performance.TimeDockerStartupAndSubmission()
 	// if err != nil {
