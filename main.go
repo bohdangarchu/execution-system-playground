@@ -1,7 +1,7 @@
 package main
 
 import (
-	"app/api"
+	"app/firerunner"
 )
 
 var jsonSubmission = `
@@ -32,7 +32,9 @@ const (
 )
 
 func main() {
-	api.Run(firecracker)
+	// api.Run(firecracker)
+
+	firerunner.RunStandaloneVM()
 
 	// err := performance.TimeDockerStartupAndSubmission()
 	// if err != nil {

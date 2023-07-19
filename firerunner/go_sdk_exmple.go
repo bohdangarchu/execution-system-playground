@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
-	models "github.com/firecracker-microvm/firecracker-go-sdk/client/models"
 	"github.com/rs/xid"
 	log "github.com/sirupsen/logrus"
 )
@@ -47,8 +46,9 @@ func RunSubmissionInsideVM(jsonSubmission string) string {
 		log.Fatalf("Failed to start machine: %v", err)
 	}
 	bootTime := time.Since(startTimeStamp)
-	log.Printf("VM started in: %s", &bootTime)
 	bootTimeStamp := time.Now()
+	log.Printf("VM started at: %v", bootTimeStamp)
+	log.Printf("VM started in: %s", &bootTime)
 
 	// for some reason takes >1s
 	result, err := executeJSONSubmissionInVM(
@@ -65,39 +65,6 @@ func RunSubmissionInsideVM(jsonSubmission string) string {
 	vm.StopVMM()
 	log.Printf("Start machine was happy")
 	return result
-}
-
-func getCNINetworkInterfaces() []firecracker.NetworkInterface {
-	return []firecracker.NetworkInterface{{
-		// Use CNI to get dynamic IP
-		CNIConfiguration: &firecracker.CNIConfiguration{
-			NetworkName: "fcnet",
-			IfName:      "veth0",
-		},
-	}}
-}
-
-func getStaticNetworkInterfaces() []firecracker.NetworkInterface {
-	return []firecracker.NetworkInterface{
-		{
-			StaticConfiguration: &firecracker.StaticNetworkConfiguration{
-				MacAddress:  "2e:d5:b6:27:e8:8a",
-				HostDevName: "tap0",
-			},
-		},
-	}
-}
-
-func getDrives() []models.Drive {
-	root_drive_path := "/home/bohdan/workspace/uni/thesis/codebench-reference-project/agent/rootfs.ext4"
-	return []models.Drive{
-		{
-			DriveID:      firecracker.String("1"),
-			PathOnHost:   &root_drive_path,
-			IsRootDevice: firecracker.Bool(true),
-			IsReadOnly:   firecracker.Bool(false),
-		},
-	}
 }
 
 func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error) {
@@ -127,21 +94,40 @@ func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error)
 	return string(responseBody), nil
 }
 
-func getVMConfig(vmID string) firecracker.Config {
-	socket_path := GetSocketPath(vmID)
-	var cpu_count int64 = 1
-	var mem_size_mib int64 = 100
-	drives := getDrives()
-	return firecracker.Config{
-		SocketPath:        socket_path,
-		KernelImagePath:   KERNEL_IMAGE_PATH,
-		KernelArgs:        "console=ttyS0 noapic reboot=k panic=1 pci=off nomodules rw",
-		Drives:            drives,
-		NetworkInterfaces: getCNINetworkInterfaces(),
-		MachineCfg: models.MachineConfiguration{
-			VcpuCount:   &cpu_count,
-			CPUTemplate: models.CPUTemplate("C3"),
-			MemSizeMib:  &mem_size_mib,
-		},
+func RunStandaloneVM() {
+	startTime := time.Now()
+	logger := log.New()
+	vmID := xid.New().String()
+	fcCfg := getVMConfig(vmID)
+	defer RemoveSocket(vmID)
+	machineOpts := []firecracker.Opt{
+		firecracker.WithLogger(log.NewEntry(logger)),
 	}
+	ctx := context.Background()
+	vmmCtx, vmmCancel := context.WithCancel(ctx)
+	defer vmmCancel()
+	cmd := firecracker.VMCommandBuilder{}.
+		WithBin(FIRECRACKER_BIN_PATH).
+		WithSocketPath(fcCfg.SocketPath).
+		WithStdin(os.Stdin).
+		WithStdout(os.Stdout).
+		WithStderr(os.Stderr).
+		Build(ctx)
+	machineOpts = append(machineOpts, firecracker.WithProcessRunner(cmd))
+	vm, err := firecracker.NewMachine(vmmCtx, fcCfg, machineOpts...)
+
+	if err != nil {
+		log.Fatalf("Failed creating machine: %s", err)
+	}
+	if err := vm.Start(vmmCtx); err != nil {
+		log.Fatalf("Failed to start machine: %v", err)
+	}
+	executionTime := time.Since(startTime)
+	log.Printf("VM started at: %v", time.Now())
+	log.Printf("VM started in: %s", executionTime)
+	log.Printf("ip address: %s", vm.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP.String())
+
+	time.Sleep(60 * time.Second)
+	vm.StopVMM()
+	log.Printf("Start machine was happy")
 }
