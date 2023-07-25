@@ -47,11 +47,11 @@ type ExecutionOutput struct {
 }
 
 type FirecrackerVM struct {
-	VmmCtx    context.Context
-	VmmCancel context.CancelFunc
-	VmmID     string
-	Machine   *firecracker.Machine
-	Ip        net.IP
+	VmmCtx           context.Context
+	VmmID            string
+	Machine          *firecracker.Machine
+	Ip               net.IP
+	StopVMandCleanUp func(vm *firecracker.Machine, vmID string) error
 }
 
 type DockerContainer struct {

@@ -1,6 +1,7 @@
 package firerunner
 
 import (
+	"app/types"
 	"bytes"
 	"context"
 	"fmt"
@@ -92,6 +93,49 @@ func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error)
 	}
 
 	return string(responseBody), nil
+}
+
+func startVM() (*types.FirecrackerVM, error) {
+	// TODO test this function
+	logger := log.New()
+	vmID := xid.New().String()
+	fcCfg := getVMConfig(vmID)
+	machineOpts := []firecracker.Opt{
+		firecracker.WithLogger(log.NewEntry(logger)),
+	}
+	ctx := context.Background()
+	vmmCtx, vmmCancel := context.WithCancel(ctx)
+	cmd := firecracker.VMCommandBuilder{}.
+		WithBin(FIRECRACKER_BIN_PATH).
+		WithSocketPath(fcCfg.SocketPath).
+		WithStdin(os.Stdin).
+		WithStdout(os.Stdout).
+		WithStderr(os.Stderr).
+		Build(ctx)
+	machineOpts = append(machineOpts, firecracker.WithProcessRunner(cmd))
+	vm, err := firecracker.NewMachine(vmmCtx, fcCfg, machineOpts...)
+
+	if err != nil {
+		log.Fatalf("Failed creating machine: %s", err)
+	}
+	if err := vm.Start(vmmCtx); err != nil {
+		log.Fatalf("Failed to start machine: %v", err)
+	}
+
+	// todo dont need to pass it actually
+	stopVMandCleanUp := func(vm *firecracker.Machine, vmID string) error {
+		vm.StopVMM()
+		RemoveSocket(vmID)
+		vmmCancel()
+		return nil
+	}
+	return &types.FirecrackerVM{
+		VmmCtx:           vmmCtx,
+		VmmID:            vmID,
+		Machine:          vm,
+		Ip:               vm.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP,
+		StopVMandCleanUp: stopVMandCleanUp,
+	}, nil
 }
 
 func RunStandaloneVM() {

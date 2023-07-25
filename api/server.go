@@ -18,7 +18,22 @@ const (
 	v8
 )
 
+func Run(option int) {
+	if option == docker {
+		http.HandleFunc("/", handleRequestWithDocker)
+	} else if option == firecracker {
+		// create an array of warm firecracker VMs
+
+		http.HandleFunc("/", handleRequestWithFirecracker)
+	} else {
+		http.HandleFunc("/", handleRequestWithV8)
+	}
+	log.Println("Listening on :8081...")
+	log.Fatal(http.ListenAndServe(":8081", nil))
+}
+
 func handleRequestWithFirecracker(w http.ResponseWriter, r *http.Request) {
+
 	// get json string from request body
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
@@ -30,18 +45,6 @@ func handleRequestWithFirecracker(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(responseJSON)
-}
-
-func Run(option int) {
-	if option == docker {
-		http.HandleFunc("/", handleRequestWithDocker)
-	} else if option == firecracker {
-		http.HandleFunc("/", handleRequestWithFirecracker)
-	} else {
-		http.HandleFunc("/", handleRequestWithV8)
-	}
-	log.Println("Listening on :8081...")
-	log.Fatal(http.ListenAndServe(":8081", nil))
 }
 
 func handleRequestWithDocker(w http.ResponseWriter, r *http.Request) {
