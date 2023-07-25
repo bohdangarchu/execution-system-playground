@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# start execution server in the background
+# main: firerunner.RunStandaloneVM()
+
 ps_output="ps_output.txt"
 duration=20
 interval=1

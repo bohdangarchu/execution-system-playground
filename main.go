@@ -41,6 +41,4 @@ func main() {
 	// 	panic(err)
 	// }
 
-	firerunner.RunFirecrackerVM()
-
 }

@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# start execution server in the background
+docker run -p 8080:8080 execution-server &
+
 ps_output="ps_output.txt"
 duration=30
 interval=1

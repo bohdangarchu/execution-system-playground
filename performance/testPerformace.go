@@ -1,6 +1,7 @@
 package performance
 
 import (
+	"app/api"
 	"app/docrunner"
 	"app/types"
 	"app/v8runner"
@@ -10,6 +11,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+)
+
+const (
+	firecracker = iota
+	docker
+	v8
 )
 
 var jsonSubmission = `
@@ -33,32 +40,42 @@ var jsonSubmission = `
   }
 `
 
-type StringFunction func(string) (string, error)
+type StringFunction func(string, string) (string, error)
 
-func TestPerformance() {
-	// compares v8 with v8 in docker
-	outputV8, errV8, timeV8 := ExecuteWithTime(jsonSubmission, executeJSONSubmissionUsingV8)
-	if errV8 != nil {
-		panic(errV8)
+func EndToEndExecutionTime() {
+	// TODO test
+	fmt.Println("Measuring firecracker execution time...")
+	api.Run(firecracker)
+	startTime := time.Now()
+	out, err := SendSubmissionToUrl(jsonSubmission, "http://localhost:8081")
+	if err != nil {
+		panic(err)
 	}
-	fmt.Println("output v8: ", outputV8)
-	fmt.Println("time v8: ", timeV8)
-	outputDocker, errDocker, timeDocker := ExecuteWithTime(jsonSubmission, ExecuteJSONSubmissionUsingDocker)
-	if errDocker != nil {
-		panic(errDocker)
+	executionTime := time.Since(startTime)
+	fmt.Println("output: ", out)
+	fmt.Println("execution time: ", executionTime)
+
+	fmt.Println("Measuring docker execution time...")
+	api.Run(docker)
+	startTime = time.Now()
+	out, err = SendSubmissionToUrl(jsonSubmission, "http://localhost:8081")
+	if err != nil {
+		panic(err)
 	}
-	fmt.Println("output docker: ", outputDocker)
-	fmt.Println("time docker: ", timeDocker)
+	executionTime = time.Since(startTime)
+	fmt.Println("output: ", out)
+	fmt.Println("execution time: ", executionTime)
 }
 
-func ExecuteWithTime(input string, fn StringFunction) (string, error, time.Duration) {
+func ExecuteWithTime(input1 string, input2 string, fn StringFunction) (string, error, time.Duration) {
 	startTime := time.Now()
-	output, err := fn(input)
+	output, err := fn(input1, input2)
 	executionTime := time.Since(startTime)
 	return output, err, executionTime
 }
 
 func TimeDockerStartupAndSubmission() error {
+	// old
 	startTime := time.Now()
 	// time the execution
 	dockerContainer, err := docrunner.StartExecutionServerInDocker()
@@ -72,7 +89,7 @@ func TimeDockerStartupAndSubmission() error {
 	// sometimes the docker container is not ready to receive requests
 	// time.Sleep(50 * time.Millisecond)
 
-	outputDocker, errDocker, timeDocker := ExecuteWithTime(jsonSubmission, ExecuteJSONSubmissionUsingDocker)
+	outputDocker, errDocker, timeDocker := ExecuteWithTime(jsonSubmission, "", SendSubmissionToUrl)
 	if errDocker != nil {
 		panic(errDocker)
 	}
@@ -82,9 +99,7 @@ func TimeDockerStartupAndSubmission() error {
 	return err
 }
 
-func ExecuteJSONSubmissionUsingDocker(jsonSubmission string) (string, error) {
-	url := "http://localhost:8080"
-
+func SendSubmissionToUrl(jsonSubmission string, url string) (string, error) {
 	// Create a request body as a bytes.Buffer
 	requestBody := bytes.NewBuffer([]byte(jsonSubmission))
 
@@ -141,3 +156,19 @@ func killContainerAndGetLogs(dockerContainer *types.DockerContainer) {
 	}
 	fmt.Println("logs: ", logs)
 }
+
+// func CompareDockerAndV8() {
+// 	// compares v8 with v8 in docker (doesn't include docker startup time)
+// 	outputV8, errV8, timeV8 := ExecuteWithTime(jsonSubmission, executeJSONSubmissionUsingV8)
+// 	if errV8 != nil {
+// 		panic(errV8)
+// 	}
+// 	fmt.Println("output v8: ", outputV8)
+// 	fmt.Println("time v8: ", timeV8)
+// 	outputDocker, errDocker, timeDocker := ExecuteWithTime(jsonSubmission, SendSubmissionToUrl)
+// 	if errDocker != nil {
+// 		panic(errDocker)
+// 	}
+// 	fmt.Println("output docker: ", outputDocker)
+// 	fmt.Println("time docker: ", timeDocker)
+// }
