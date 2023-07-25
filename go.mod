@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/docker/docker v24.0.0+incompatible
+	github.com/sirupsen/logrus v1.9.0
 	rogchap.com/v8go v0.9.0
 )
 
@@ -33,7 +34,6 @@ require (
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5 // indirect
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f // indirect
 	go.mongodb.org/mongo-driver v1.8.3 // indirect
@@ -44,7 +44,7 @@ require (
 require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/firecracker-microvm/firecracker-go-sdk v1.0.0
 	github.com/gogo/protobuf v1.3.2 // indirect

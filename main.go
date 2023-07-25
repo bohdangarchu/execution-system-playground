@@ -25,9 +25,16 @@ var jsonSubmission = `
   }
 `
 
+const (
+	firecracker = iota
+	docker
+	v8
+)
+
 func main() {
-	// result := firerunner.RunSubmissionInsideVM(jsonSubmission)
-	// fmt.Println("result: ", result)
+	// api.Run(firecracker)
+
+	firerunner.RunStandaloneVM()
 
 	// err := performance.TimeDockerStartupAndSubmission()
 	// if err != nil {

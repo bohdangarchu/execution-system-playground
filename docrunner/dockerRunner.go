@@ -2,9 +2,11 @@ package docrunner
 
 import (
 	"app/types"
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -13,6 +15,64 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
+
+func RunSubmissionInsideDocker(jsonSubmission string) (string, error) {
+	dockerContainer, err := StartExecutionServerInDocker()
+	if err != nil {
+		return "", err
+	}
+	defer killContainerAndGetLogs(dockerContainer)
+	// sometimes the docker container is not ready to receive requests
+	time.Sleep(50 * time.Millisecond)
+
+	res, err := sendJSONSubmissionToDocker(jsonSubmission)
+	if err != nil {
+		return "", err
+	}
+	return res, nil
+}
+
+func sendJSONSubmissionToDocker(jsonSubmission string) (string, error) {
+	url := "http://localhost:8080"
+
+	// Create a request body as a bytes.Buffer
+	requestBody := bytes.NewBuffer([]byte(jsonSubmission))
+
+	// Make the POST request
+	resp, err := http.Post(url, "application/json", requestBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to make POST request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Check the response status code
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("bad response status code: %d, resp: %v", resp.StatusCode, resp)
+	}
+
+	// Read the response body
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	return string(responseBody), nil
+}
+
+func killContainerAndGetLogs(dockerContainer *types.DockerContainer) {
+	// kill the container
+	err := KillDockerContainer(dockerContainer)
+	if err != nil {
+		panic(err)
+	}
+
+	// Retrieve the logs of the container
+	logs, err := RetrieveLogsFromDockerContainer(dockerContainer)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("logs: ", logs)
+}
 
 func RetrieveLogsFromDockerContainer(dockerContainer *types.DockerContainer) (string, error) {
 	// Retrieve the logs of the container
