@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/rs/xid"
 )
 
 const (
@@ -22,24 +24,75 @@ func Run(option int) {
 	if option == docker {
 		http.HandleFunc("/", handleRequestWithDocker)
 	} else if option == firecracker {
+		workers := 2
+		jobs := make(chan types.Job, workers)
+		results := make(chan types.JobResult, workers)
 		// create an array of warm firecracker VMs
-
-		http.HandleFunc("/", handleRequestWithFirecracker)
+		vms := make([]*types.FirecrackerVM, workers)
+		for i := 0; i < 5; i++ {
+			vm, err := firerunner.StartVM()
+			if err != nil {
+				log.Fatalf("Failed to start VM: %v", err)
+			}
+			// not sure if this works
+			defer vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
+			vms[i] = vm
+			go consumeJob(vm, jobs, results)
+		}
+		http.HandleFunc("/", getFirecrackerHandler(jobs, results))
 	} else {
 		http.HandleFunc("/", handleRequestWithV8)
 	}
 	log.Println("Listening on :8081...")
-	log.Fatal(http.ListenAndServe(":8081", nil))
+	err := http.ListenAndServe(":8081", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func consumeJob(vm *types.FirecrackerVM, jobs <-chan types.Job, results chan<- types.JobResult) {
+	for job := range jobs {
+		result := types.JobResult{
+			JobId: job.JobId,
+		}
+		result.Result, result.Err = firerunner.RunSubmissionInsideVM(vm, job.Submission)
+		results <- result
+	}
+}
+
+func getFirecrackerHandler(jobs chan<- types.Job, results <-chan types.JobResult) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// get json string from request body
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(r.Body)
+		jsonSubmission := buf.String()
+
+		job := types.Job{
+			Submission: jsonSubmission,
+			JobId:      xid.New().String(),
+		}
+		jobs <- job
+		result := <-results
+		if result.Err != nil {
+			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", result.Err), http.StatusBadRequest)
+			return
+		}
+
+		responseJSON := []byte(result.Result)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(responseJSON)
+	}
 }
 
 func handleRequestWithFirecracker(w http.ResponseWriter, r *http.Request) {
-
 	// get json string from request body
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
 	jsonSubmission := buf.String()
 
-	responseString := firerunner.RunSubmissionInsideVM(jsonSubmission)
+	responseString := firerunner.StartVMandRunSubmission(jsonSubmission)
 	responseJSON := []byte(responseString)
 
 	w.Header().Set("Content-Type", "application/json")

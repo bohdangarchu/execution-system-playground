@@ -46,6 +46,17 @@ type ExecutionOutput struct {
 	Error  string   `json:"error"`
 }
 
+type Job struct {
+	Submission string
+	JobId      string
+}
+
+type JobResult struct {
+	JobId  string
+	Result string
+	Err    error
+}
+
 type FirecrackerVM struct {
 	VmmCtx           context.Context
 	VmmID            string

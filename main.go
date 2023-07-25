@@ -1,9 +1,5 @@
 package main
 
-import (
-	"app/firerunner"
-)
-
 var jsonSubmission = `
 {
 	"functionName": "addTwoNumbers",
@@ -34,11 +30,10 @@ const (
 func main() {
 	// api.Run(firecracker)
 
-	firerunner.RunStandaloneVM()
+	// firerunner.RunStandaloneVM()
 
-	// err := performance.TimeDockerStartupAndSubmission()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	// TODO
+	// test StartVM and vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
+	// test server
 
 }

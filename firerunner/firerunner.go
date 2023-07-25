@@ -18,7 +18,14 @@ import (
 const FIRECRACKER_BIN_PATH = "/home/bohdan/software/firecracker/build/cargo_target/x86_64-unknown-linux-musl/debug/firecracker"
 const KERNEL_IMAGE_PATH = "/home/bohdan/workspace/assets/hello-vmlinux.bin"
 
-func RunSubmissionInsideVM(jsonSubmission string) string {
+func RunSubmissionInsideVM(vm *types.FirecrackerVM, jsonSubmission string) (string, error) {
+	return executeJSONSubmissionInVM(
+		vm.Ip.String(),
+		jsonSubmission,
+	)
+}
+
+func StartVMandRunSubmission(jsonSubmission string) string {
 	startTimeStamp := time.Now()
 	logger := log.New()
 	vmID := xid.New().String()
@@ -95,7 +102,7 @@ func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error)
 	return string(responseBody), nil
 }
 
-func startVM() (*types.FirecrackerVM, error) {
+func StartVM() (*types.FirecrackerVM, error) {
 	// TODO test this function
 	logger := log.New()
 	vmID := xid.New().String()
