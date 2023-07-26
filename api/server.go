@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/rs/xid"
 )
@@ -29,7 +30,7 @@ func Run(option int) {
 		results := make(chan types.JobResult, workers)
 		// create an array of warm firecracker VMs
 		vms := make([]*types.FirecrackerVM, workers)
-		for i := 0; i < 5; i++ {
+		for i := 0; i < workers; i++ {
 			vm, err := firerunner.StartVM()
 			if err != nil {
 				log.Fatalf("Failed to start VM: %v", err)
@@ -43,6 +44,12 @@ func Run(option int) {
 	} else {
 		http.HandleFunc("/", handleRequestWithV8)
 	}
+	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
+		// stop the server
+		log.Println("Stopping the server...")
+		w.WriteHeader(http.StatusOK)
+		os.Exit(0)
+	})
 	log.Println("Listening on :8081...")
 	err := http.ListenAndServe(":8081", nil)
 	if err != nil {
@@ -55,6 +62,7 @@ func consumeJob(vm *types.FirecrackerVM, jobs <-chan types.Job, results chan<- t
 		result := types.JobResult{
 			JobId: job.JobId,
 		}
+		fmt.Printf("VM %s Running job: %s", vm.VmmID, job.Submission)
 		result.Result, result.Err = firerunner.RunSubmissionInsideVM(vm, job.Submission)
 		results <- result
 	}
@@ -74,7 +82,7 @@ func getFirecrackerHandler(jobs chan<- types.Job, results <-chan types.JobResult
 		jobs <- job
 		result := <-results
 		if result.Err != nil {
-			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", result.Err), http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", result.Err.Error()), http.StatusBadRequest)
 			return
 		}
 

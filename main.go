@@ -1,5 +1,7 @@
 package main
 
+import "app/api"
+
 var jsonSubmission = `
 {
 	"functionName": "addTwoNumbers",
@@ -28,12 +30,20 @@ const (
 )
 
 func main() {
-	// api.Run(firecracker)
+	api.Run(firecracker)
 
 	// firerunner.RunStandaloneVM()
 
-	// TODO
 	// test StartVM and vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
-	// test server
+	// vm, err := firerunner.StartVM()
+	// if err != nil {
+	// 	log.Fatalf("Failed to start VM: %v", err)
+	// }
+	// res, err := firerunner.RunSubmissionInsideVM(vm, jsonSubmission)
+	// if err != nil {
+	// 	log.Fatalf("Failed to run submission inside VM: %v", err)
+	// }
+	// log.Println(res)
+	// vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
 
 }

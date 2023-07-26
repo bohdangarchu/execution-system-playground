@@ -90,7 +90,10 @@ func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error)
 
 	// Check the response status code
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("bad response status code: %d", resp.StatusCode)
+		// resp body to string
+		respBody, _ := ioutil.ReadAll(resp.Body)
+		return "",
+			fmt.Errorf("bad response status code: %d with error: %s", resp.StatusCode, respBody)
 	}
 
 	// Read the response body
@@ -129,7 +132,7 @@ func StartVM() (*types.FirecrackerVM, error) {
 		log.Fatalf("Failed to start machine: %v", err)
 	}
 
-	// todo dont need to pass it actually
+	// todo dont need to pass the parameters
 	stopVMandCleanUp := func(vm *firecracker.Machine, vmID string) error {
 		vm.StopVMM()
 		RemoveSocket(vmID)
