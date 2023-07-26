@@ -22,14 +22,15 @@ const (
 )
 
 func Run(option int) {
+	var vms []*types.FirecrackerVM
 	if option == docker {
 		http.HandleFunc("/", handleRequestWithDocker)
 	} else if option == firecracker {
-		workers := 2
+		workers := 3
 		jobs := make(chan types.Job, workers)
 		results := make(chan types.JobResult, workers)
 		// create an array of warm firecracker VMs
-		vms := make([]*types.FirecrackerVM, workers)
+		vms = make([]*types.FirecrackerVM, workers)
 		for i := 0; i < workers; i++ {
 			vm, err := firerunner.StartVM()
 			if err != nil {
@@ -45,8 +46,12 @@ func Run(option int) {
 		http.HandleFunc("/", handleRequestWithV8)
 	}
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
-		// stop the server
-		log.Println("Stopping the server...")
+		// stop all the VMs
+		if option == firecracker {
+			for _, vm := range vms {
+				vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
+			}
+		}
 		w.WriteHeader(http.StatusOK)
 		os.Exit(0)
 	})

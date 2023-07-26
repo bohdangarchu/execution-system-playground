@@ -134,8 +134,10 @@ func StartVM() (*types.FirecrackerVM, error) {
 
 	// todo dont need to pass the parameters
 	stopVMandCleanUp := func(vm *firecracker.Machine, vmID string) error {
+		fmt.Println("stoppping VM " + vmID)
 		vm.StopVMM()
 		RemoveSocket(vmID)
+		os.Remove(*vm.Cfg.Drives[0].PathOnHost)
 		vmmCancel()
 		return nil
 	}
@@ -150,37 +152,15 @@ func StartVM() (*types.FirecrackerVM, error) {
 
 func RunStandaloneVM() {
 	startTime := time.Now()
-	logger := log.New()
-	vmID := xid.New().String()
-	fcCfg := getVMConfig(vmID)
-	defer RemoveSocket(vmID)
-	machineOpts := []firecracker.Opt{
-		firecracker.WithLogger(log.NewEntry(logger)),
-	}
-	ctx := context.Background()
-	vmmCtx, vmmCancel := context.WithCancel(ctx)
-	defer vmmCancel()
-	cmd := firecracker.VMCommandBuilder{}.
-		WithBin(FIRECRACKER_BIN_PATH).
-		WithSocketPath(fcCfg.SocketPath).
-		WithStdin(os.Stdin).
-		WithStdout(os.Stdout).
-		WithStderr(os.Stderr).
-		Build(ctx)
-	machineOpts = append(machineOpts, firecracker.WithProcessRunner(cmd))
-	vm, err := firecracker.NewMachine(vmmCtx, fcCfg, machineOpts...)
-
-	if err != nil {
-		log.Fatalf("Failed creating machine: %s", err)
-	}
-	if err := vm.Start(vmmCtx); err != nil {
-		log.Fatalf("Failed to start machine: %v", err)
-	}
+	vm, err := StartVM()
 	executionTime := time.Since(startTime)
+	if err != nil {
+		log.Fatalf("Failed to start VM: %v", err)
+	}
 	log.Printf("VM started in: %s", executionTime)
-	log.Printf("ip address: %s", vm.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP.String())
+	log.Printf("ip address: %s", vm.Machine.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP.String())
 
-	time.Sleep(60 * time.Second)
-	vm.StopVMM()
+	time.Sleep(5 * time.Second)
+	vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
 	log.Printf("Start machine was happy")
 }

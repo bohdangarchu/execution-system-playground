@@ -1,10 +1,8 @@
 import asyncio
 import random
+import sys
 import time
 import aiohttp
-
-# Number of concurrent requests
-concurrent_requests = 3
 
 # URL to request
 url = "http://localhost:8081/"
@@ -16,7 +14,7 @@ async def make_request(session: aiohttp.ClientSession):
         response_text = await response.text()
         print(f"Response: {response_text}")
 
-async def main():
+async def main(concurrent_requests=5):
     async with aiohttp.ClientSession() as session:
         tasks = [make_request(session) for _ in range(concurrent_requests)]
         await asyncio.gather(*tasks)
@@ -46,9 +44,12 @@ def get_random_submission():
 """
 
 if __name__ == "__main__":
-    # measure time
+    concurrent_requests = 5
+    if len(sys.argv) > 1:
+        concurrent_requests = int(sys.argv[1])
+
     time_start = time.time()
-    asyncio.run(main())
+    asyncio.run(main(concurrent_requests))
     time_end = time.time()
     print(f"Time taken: {time_end - time_start} seconds for {concurrent_requests} requests")
     print(f"Average time per request: {(time_end - time_start) / concurrent_requests} seconds")
