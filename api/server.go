@@ -26,7 +26,7 @@ func Run(option int) {
 	if option == docker {
 		http.HandleFunc("/", handleRequestWithDocker)
 	} else if option == firecracker {
-		workers := 3
+		workers := 5
 		jobs := make(chan types.Job, workers)
 		results := make(chan types.JobResult, workers)
 		// create an array of warm firecracker VMs
