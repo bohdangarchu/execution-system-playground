@@ -22,33 +22,32 @@ const (
 )
 
 func Run(option int) {
-	var vms []*types.FirecrackerVM
+	workers := 2
+	vmPool := make(chan types.FirecrackerVM, workers)
 	if option == docker {
 		http.HandleFunc("/", handleRequestWithDocker)
 	} else if option == firecracker {
-		workers := 5
-		jobs := make(chan types.Job, workers)
-		results := make(chan types.JobResult, workers)
-		// create an array of warm firecracker VMs
-		vms = make([]*types.FirecrackerVM, workers)
+
 		for i := 0; i < workers; i++ {
 			vm, err := firerunner.StartVM()
 			if err != nil {
 				log.Fatalf("Failed to start VM: %v", err)
 			}
-			// not sure if this works
-			defer vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
-			vms[i] = vm
-			go consumeJob(vm, jobs, results)
+			// doesnt work
+			// defer vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
+			vmPool <- *vm
 		}
-		http.HandleFunc("/", getFirecrackerHandler(jobs, results))
+		fmt.Println("VM pool initialized")
+		http.HandleFunc("/", getFirecrackerHandler(vmPool))
 	} else {
 		http.HandleFunc("/", handleRequestWithV8)
 	}
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Killing the server...")
 		// stop all the VMs
 		if option == firecracker {
-			for _, vm := range vms {
+			for i := 0; i < workers; i++ {
+				vm := <-vmPool
 				vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
 			}
 		}
@@ -62,35 +61,29 @@ func Run(option int) {
 	}
 }
 
-func consumeJob(vm *types.FirecrackerVM, jobs <-chan types.Job, results chan<- types.JobResult) {
-	for job := range jobs {
-		result := types.JobResult{
-			JobId: job.JobId,
-		}
-		fmt.Printf("VM %s Running job: %s", vm.VmmID, job.Submission)
-		result.Result, result.Err = firerunner.RunSubmissionInsideVM(vm, job.Submission)
-		results <- result
-	}
-}
-
-func getFirecrackerHandler(jobs chan<- types.Job, results <-chan types.JobResult) http.HandlerFunc {
+func getFirecrackerHandler(vmPool chan types.FirecrackerVM) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get json string from request body
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(r.Body)
 		jsonSubmission := buf.String()
-
+		// get a VM from the pool
+		vm := <-vmPool
 		job := types.Job{
 			Submission: jsonSubmission,
 			JobId:      xid.New().String(),
 		}
-		jobs <- job
-		result := <-results
+		result := types.JobResult{
+			JobId: job.JobId,
+		}
+		fmt.Printf("VM %s Running job: %s", vm.VmmID, job.Submission)
+		result.Result, result.Err = firerunner.RunSubmissionInsideVM(&vm, job.Submission)
 		if result.Err != nil {
 			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", result.Err.Error()), http.StatusBadRequest)
 			return
 		}
-
+		// push the VM back to the pool
+		vmPool <- vm
 		responseJSON := []byte(result.Result)
 
 		w.Header().Set("Content-Type", "application/json")
