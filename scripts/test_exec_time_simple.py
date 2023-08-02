@@ -10,10 +10,11 @@ url = "http://localhost:8081/"
 
 async def make_request(session: aiohttp.ClientSession):
     print(f"Making request to {url}")
+    submission=get_random_submission()
     # send a post reqeust with submission to the url
-    async with session.post(url, data=get_random_submission()) as response:
+    async with session.post(url, data=submission) as response:
         response_text = await response.text()
-        print(f"Response: {response_text}")
+        print(f"Response: {response_text} for submission {submission}")
 
 async def main(concurrent_requests=5):
     async with aiohttp.ClientSession() as session:
