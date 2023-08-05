@@ -16,24 +16,24 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
-func RunSubmissionInsideDocker(jsonSubmission string) (string, error) {
-	dockerContainer, err := StartExecutionServerInDocker()
+func StartContainerAndRunSubmission(jsonSubmission string) (string, error) {
+	dockerContainer, err := StartExecutionServerInDocker("8080")
 	if err != nil {
 		return "", err
 	}
-	defer killContainerAndGetLogs(dockerContainer)
+	defer KillContainerAndGetLogs(dockerContainer)
 	// sometimes the docker container is not ready to receive requests
 	time.Sleep(50 * time.Millisecond)
 
-	res, err := sendJSONSubmissionToDocker(jsonSubmission)
+	res, err := SendJSONSubmissionToDocker("8080", jsonSubmission)
 	if err != nil {
 		return "", err
 	}
 	return res, nil
 }
 
-func sendJSONSubmissionToDocker(jsonSubmission string) (string, error) {
-	url := "http://localhost:8080"
+func SendJSONSubmissionToDocker(port string, jsonSubmission string) (string, error) {
+	url := "http://localhost:" + port
 
 	// Create a request body as a bytes.Buffer
 	requestBody := bytes.NewBuffer([]byte(jsonSubmission))
@@ -59,13 +59,12 @@ func sendJSONSubmissionToDocker(jsonSubmission string) (string, error) {
 	return string(responseBody), nil
 }
 
-func killContainerAndGetLogs(dockerContainer *types.DockerContainer) {
+func KillContainerAndGetLogs(dockerContainer *types.DockerContainer) {
 	// kill the container
 	err := KillDockerContainer(dockerContainer)
 	if err != nil {
 		panic(err)
 	}
-
 	// Retrieve the logs of the container
 	logs, err := RetrieveLogsFromDockerContainer(dockerContainer)
 	if err != nil {
@@ -94,13 +93,11 @@ func KillDockerContainer(dockerContainer *types.DockerContainer) error {
 	)
 }
 
-func StartExecutionServerInDocker() (*types.DockerContainer, error) {
+func StartExecutionServerInDocker(port string) (*types.DockerContainer, error) {
 	// starts a docker container with the image "execution-server"
-	// and exposes port 8080
-
+	fmt.Println("Starting docker container...")
 	// Create a background context
 	ctx := context.Background()
-
 	// Initialize Docker client
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	// TODO cli is used later so maybe don't defer close
@@ -108,7 +105,6 @@ func StartExecutionServerInDocker() (*types.DockerContainer, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	resp, err := cli.ContainerCreate(
 		ctx,
 		&container.Config{
@@ -123,7 +119,7 @@ func StartExecutionServerInDocker() (*types.DockerContainer, error) {
 				"8080/tcp": []nat.PortBinding{
 					{
 						HostIP:   "0.0.0.0",
-						HostPort: "8080",
+						HostPort: port,
 					},
 				},
 			},
@@ -136,11 +132,10 @@ func StartExecutionServerInDocker() (*types.DockerContainer, error) {
 	if err := cli.ContainerStart(ctx, resp.ID, dockertypes.ContainerStartOptions{}); err != nil {
 		return nil, err
 	}
-
 	waitForContainerRunning(cli, resp.ID)
-
 	return &types.DockerContainer{
 		ContainerId: resp.ID,
+		Port:        port,
 		Cli:         cli,
 		Ctx:         ctx,
 	}, nil

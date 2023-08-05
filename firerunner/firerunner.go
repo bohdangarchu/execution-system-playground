@@ -160,7 +160,7 @@ func RunStandaloneVM() {
 	log.Printf("VM started in: %s", executionTime)
 	log.Printf("ip address: %s", vm.Machine.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP.String())
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 	vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
 	log.Printf("Start machine was happy")
 }

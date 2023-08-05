@@ -67,6 +67,7 @@ type FirecrackerVM struct {
 
 type DockerContainer struct {
 	ContainerId string
+	Port        string
 	Cli         *client.Client
 	Ctx         context.Context
 }

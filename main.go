@@ -1,6 +1,8 @@
 package main
 
-import "app/api"
+import (
+	"app/api"
+)
 
 var jsonSubmission = `
 {
@@ -30,7 +32,7 @@ const (
 )
 
 func main() {
-	api.Run(firecracker)
+	api.Run(docker, 5)
 
 	// firerunner.RunStandaloneVM()
 

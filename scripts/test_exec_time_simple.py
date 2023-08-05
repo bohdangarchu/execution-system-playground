@@ -6,7 +6,7 @@ import time
 import aiohttp
 
 # URL to request
-url = "http://localhost:8081/"
+url = "http://localhost:8080/"
 
 async def make_request(session: aiohttp.ClientSession):
     print(f"Making request to {url}")
