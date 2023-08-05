@@ -109,16 +109,13 @@ func handleRequestWithV8(w http.ResponseWriter, r *http.Request) {
 		log.Println(fmt.Sprintf("failed to parse request body: %v", r.Body))
 		return
 	}
-
 	outputArray := v8runner.RunFunctionWithInputs(functionSubmission)
-
 	// Convert the result to JSON
 	responseJSON, err := json.Marshal(outputArray)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to convert result to JSON: %v", err), http.StatusInternalServerError)
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(responseJSON)

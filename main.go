@@ -60,13 +60,13 @@ func main() {
 	var workers int
 	// Define flags
 	flag.Var(&impl, "impl", fmt.Sprintf("Choose from: %s", strings.Join(allowedImplValues, ", ")))
-	flag.IntVar(&workers, "workers", 0, "Number of workers (int)")
+	flag.IntVar(&workers, "workers", 1, "Number of workers (int)")
 	// Parse the command line flags
 	flag.Parse()
 	// Print the values
 	fmt.Println("impl:", impl)
 	fmt.Println("workers:", workers)
-	api.Run(docker, workers)
+	api.Run(impl.String(), workers)
 }
 
 func runVM() {

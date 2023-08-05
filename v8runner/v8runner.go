@@ -12,7 +12,6 @@ import (
 )
 
 func RunFunctionWithInputs(submission types.FunctionSubmission) []types.TestResult {
-
 	fmt.Println("function to be executed: \n", submission.Code)
 	// creates a new V8 context with a new Isolate aka VM
 	iso := v8.NewIsolate()

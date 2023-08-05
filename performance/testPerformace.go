@@ -45,7 +45,7 @@ type StringFunction func(string, string) (string, error)
 func EndToEndExecutionTime() {
 	// TODO test
 	fmt.Println("Measuring firecracker execution time...")
-	api.Run(firecracker, 1)
+	api.Run("firecracker", 1)
 	startTime := time.Now()
 	out, err := SendSubmissionToUrl(jsonSubmission, "http://localhost:8081")
 	if err != nil {
@@ -56,7 +56,7 @@ func EndToEndExecutionTime() {
 	fmt.Println("execution time: ", executionTime)
 
 	fmt.Println("Measuring docker execution time...")
-	api.Run(docker, 1)
+	api.Run("docker", 1)
 	startTime = time.Now()
 	out, err = SendSubmissionToUrl(jsonSubmission, "http://localhost:8081")
 	if err != nil {

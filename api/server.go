@@ -10,16 +10,10 @@ import (
 	"os"
 )
 
-const (
-	firecracker = iota
-	docker
-	v8
-)
-
-func Run(option int, workers int) {
+func Run(option string, workers int) {
 	var vmPool chan types.FirecrackerVM
 	var containerPool chan types.DockerContainer
-	if option == docker {
+	if option == "docker" {
 		containerPool = make(chan types.DockerContainer, workers)
 		port := 8081
 		for i := 0; i < workers; i++ {
@@ -31,7 +25,7 @@ func Run(option int, workers int) {
 			port++
 		}
 		http.HandleFunc("/", getDockerHandler(containerPool))
-	} else if option == firecracker {
+	} else if option == "firecracker" {
 		vmPool = make(chan types.FirecrackerVM, workers)
 		for i := 0; i < workers; i++ {
 			vm, err := firerunner.StartVM()
@@ -47,12 +41,12 @@ func Run(option int, workers int) {
 	}
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Stopping the server...")
-		if option == docker && containerPool != nil {
+		if option == "docker" && containerPool != nil {
 			for i := 0; i < workers; i++ {
 				container := <-containerPool
 				docrunner.KillContainerAndGetLogs(&container)
 			}
-		} else if option == firecracker && vmPool != nil {
+		} else if option == "firecracker" && vmPool != nil {
 			for i := 0; i < workers; i++ {
 				vm := <-vmPool
 				vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
