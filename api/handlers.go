@@ -109,7 +109,12 @@ func handleRequestWithV8(w http.ResponseWriter, r *http.Request) {
 		log.Println(fmt.Sprintf("failed to parse request body: %v", r.Body))
 		return
 	}
-	outputArray := v8runner.RunFunctionWithInputs(functionSubmission)
+	// Execute the JavaScript code
+	outputArray, err := v8runner.RunFunctionWithInputs(functionSubmission)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to execute submission: %v", err), http.StatusInternalServerError)
+		return
+	}
 	// Convert the result to JSON
 	responseJSON, err := json.Marshal(outputArray)
 	if err != nil {

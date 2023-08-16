@@ -45,7 +45,7 @@ func getUniqueDrive(id string) models.Drive {
 
 func CopyBaseRootfs(id string) (string, error) {
 	// copy rootfs.ext4 to /tmp/id-rootfs.ext4
-	root_drive_path := "/home/bohdan/workspace/uni/thesis/codebench-reference-project/agent/rootfs.ext4"
+	root_drive_path := "/home/bohdan/workspace/uni/thesis/worker/firecracker/rootfs.ext4"
 	// Read the contents of the source file
 	data, err := ioutil.ReadFile(root_drive_path)
 	if err != nil {

@@ -28,12 +28,8 @@ type FunctionSubmission struct {
 }
 
 type TestCase struct {
-	InputArray []Argument `json:"input"`
-}
-
-type Argument struct {
-	Value interface{} `json:"value"`
-	Type  string      `json:"type"`
+	Id         string   `json:"id"`
+	InputArray []string `json:"input"`
 }
 
 type TestResult struct {
@@ -41,9 +37,15 @@ type TestResult struct {
 	ActualOutput ExecutionOutput `json:"actualOutput"`
 }
 
+type Argument struct {
+	Value interface{} `json:"value"`
+	Type  string      `json:"type"`
+}
+
 type ExecutionOutput struct {
-	Output Argument `json:"output"`
-	Error  string   `json:"error"`
+	Output string `json:"output"`
+	Error  string `json:"error"`
+	Logs   string `json:"logs"`
 }
 
 type Job struct {

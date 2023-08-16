@@ -8,6 +8,7 @@ import (
 )
 
 func v8ValueToArgument(value v8.Value) types.Argument {
+	// not used because we use JSON types
 	switch {
 	case value.IsString():
 		return types.Argument{

@@ -11,81 +11,115 @@ import (
 	v8 "rogchap.com/v8go"
 )
 
-func RunFunctionWithInputs(submission types.FunctionSubmission) []types.TestResult {
+func RunFunctionWithInputs(submission types.FunctionSubmission) ([]types.TestResult, error) {
 	fmt.Println("function to be executed: \n", submission.Code)
-	// creates a new V8 context with a new Isolate aka VM
 	iso := v8.NewIsolate()
 	ctx := v8.NewContext(iso)
-	// executes a script on the global context
 	_, err := ctx.RunScript(submission.Code, "main.js")
 	if err != nil {
-		// TODO add error handling
-		panic(err)
+		return []types.TestResult{}, err
 	}
 	fnVal, err := ctx.Global().Get(submission.FunctionName)
 	if err != nil {
-		// TODO add error handling
-		panic(err)
+		return []types.TestResult{}, err
 	}
 	function, err := fnVal.AsFunction()
 	if err != nil {
-		// TODO add error handling
-		panic(err)
+		return []types.TestResult{}, err
 	}
 	results := make([]types.TestResult, len(submission.TestCases))
 	for i, testCase := range submission.TestCases {
-		// TODO add error handling
-		values := make([]v8.Valuer, len(testCase.InputArray))
-		for i, input := range testCase.InputArray {
-			value, _ := v8.NewValue(iso, input.Value)
-			values[i] = value
-		}
-		val, err := function.Call(ctx.Global(), values...)
+		results[i] = runTestCase(ctx, function, testCase)
+	}
+	return results, nil
+}
+
+func jsonToV8Values(ctx *v8.Context, arguments []string) ([]v8.Valuer, error) {
+	values := make([]v8.Valuer, len(arguments))
+	for i, input := range arguments {
+		value, err := v8.JSONParse(ctx, input)
 		if err != nil {
-			// If an error occurs, create an ExecutionOutput object with the error message
-			results[i] = types.TestResult{
-				TestCase: testCase,
-				ActualOutput: types.ExecutionOutput{
-					Output: types.Argument{},
-					Error:  err.Error(),
-				},
-			}
-			continue
+			return values, err
 		}
-		// If no error occurs, create an ExecutionOutput object with the actual output value
-		results[i] = types.TestResult{
+		values[i] = value
+	}
+	return values, nil
+}
+
+func runTestCase(ctx *v8.Context, fun *v8.Function, testCase types.TestCase) types.TestResult {
+	values, err := jsonToV8Values(ctx, testCase.InputArray)
+	if err != nil {
+		return types.TestResult{
 			TestCase: testCase,
 			ActualOutput: types.ExecutionOutput{
-				Output: v8ValueToArgument(*val),
-				Error:  "",
+				Output: "",
+				Error:  err.Error(),
+				Logs:   "",
 			},
 		}
 	}
-	return results
+	var buf bytes.Buffer
+	if err := v8console.InjectTo(ctx, v8console.WithOutput(&buf)); err != nil {
+		return types.TestResult{
+			TestCase: testCase,
+			ActualOutput: types.ExecutionOutput{
+				Output: "",
+				Error:  err.Error(),
+				Logs:   "",
+			},
+		}
+	}
+	val, err := fun.Call(ctx.Global(), values...)
+	logs := buf.String()
+	if err != nil {
+		return types.TestResult{
+			TestCase: testCase,
+			ActualOutput: types.ExecutionOutput{
+				Output: "",
+				Error:  err.Error(),
+				Logs:   logs,
+			},
+		}
+	}
+	jsonValue, err := v8.JSONStringify(ctx, val)
+	if err != nil {
+		return types.TestResult{
+			TestCase: testCase,
+			ActualOutput: types.ExecutionOutput{
+				Output: jsonValue,
+				Error:  err.Error(),
+				Logs:   logs,
+			},
+		}
+	}
+	return types.TestResult{
+		TestCase: testCase,
+		ActualOutput: types.ExecutionOutput{
+			Output: jsonValue,
+			Error:  "",
+			Logs:   logs,
+		},
+	}
 }
 
 func ExecuteJsWithConsoleOutput(code string) (string, error) {
+	// not used
 	// returns logs
 	ctx := v8.NewContext()
-
 	var buf bytes.Buffer
-
 	if err := v8console.InjectTo(ctx, v8console.WithOutput(&buf)); err != nil {
 		return "", err
 	}
-
 	_, err := ctx.RunScript(code, "main.js")
 	if err != nil {
 		return "", err
 	}
-
 	logs := buf.String()
-
 	return logs, nil
-
 }
 
 func RunFunctionWithInputsManual(submission types.FunctionSubmissionOld, inOutArray []types.InputOutput) {
+	// not used
 	// calls the function manually
 
 	functionCode := fmt.Sprintf(
@@ -117,6 +151,7 @@ func RunFunctionWithInputsManual(submission types.FunctionSubmissionOld, inOutAr
 }
 
 func ExecuteJavaScript(code string) (string, error) {
+	// not used
 	// for every console.log the logMessages variable gets updated
 	// and is returned in the end
 	// v8console ("go.kuoruan.net/v8go-polyfills/console") should be used instead

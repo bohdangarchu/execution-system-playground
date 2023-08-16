@@ -24,7 +24,7 @@ func Run(option string, workers int) {
 			containerPool <- *container
 			port++
 		}
-		http.HandleFunc("/", getDockerHandler(containerPool))
+		http.HandleFunc("/execute", getDockerHandler(containerPool))
 	} else if option == "firecracker" {
 		vmPool = make(chan types.FirecrackerVM, workers)
 		for i := 0; i < workers; i++ {
@@ -35,9 +35,9 @@ func Run(option string, workers int) {
 			vmPool <- *vm
 		}
 		fmt.Println("VM pool initialized")
-		http.HandleFunc("/", getFirecrackerHandler(vmPool))
+		http.HandleFunc("/execute", getFirecrackerHandler(vmPool))
 	} else {
-		http.HandleFunc("/", handleRequestWithV8)
+		http.HandleFunc("/execute", handleRequestWithV8)
 	}
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Stopping the server...")
