@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+	"time"
 
 	"app/types"
 
@@ -69,7 +70,7 @@ func runTestCase(ctx *v8.Context, fun *v8.Function, testCase types.TestCase) typ
 			},
 		}
 	}
-	val, err := fun.Call(ctx.Global(), values...)
+	val, err := callFunctionWithTimeout(ctx, fun, values, 1000*time.Millisecond)
 	logs := buf.String()
 	if err != nil {
 		return types.TestResult{
@@ -99,6 +100,30 @@ func runTestCase(ctx *v8.Context, fun *v8.Function, testCase types.TestCase) typ
 			Error:  "",
 			Logs:   logs,
 		},
+	}
+}
+
+func callFunctionWithTimeout(ctx *v8.Context, fun *v8.Function, values []v8.Valuer, timeout time.Duration) (*v8.Value, error) {
+	vals := make(chan *v8.Value, 1)
+	errs := make(chan error, 1)
+	go func() {
+		val, err := fun.Call(ctx.Global(), values...)
+		if err != nil {
+			errs <- err
+			return
+		}
+		vals <- val
+	}()
+	select {
+	case val := <-vals:
+		return val, nil
+	case err := <-errs:
+		return nil, err
+	case <-time.After(timeout):
+		vm := ctx.Isolate()     // get the Isolate from the context
+		vm.TerminateExecution() // terminate the execution
+		<-errs                  // will get a termination error back from the running script
+		return nil, fmt.Errorf("execution timed out after %d ms", timeout.Milliseconds())
 	}
 }
 
