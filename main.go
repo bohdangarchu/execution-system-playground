@@ -56,8 +56,8 @@ func (iv *implValue) Set(value string) error {
 }
 
 func main() {
-	var impl implValue
-	var workers int
+	var impl implValue = "v8"
+	var workers int = 1
 	// Define flags
 	flag.Var(&impl, "impl", fmt.Sprintf("Choose from: %s", strings.Join(allowedImplValues, ", ")))
 	flag.IntVar(&workers, "workers", 1, "Number of workers (int)")
