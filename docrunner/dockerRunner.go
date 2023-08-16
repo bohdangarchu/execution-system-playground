@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -33,7 +34,7 @@ func StartContainerAndRunSubmission(jsonSubmission string) (string, error) {
 }
 
 func SendJSONSubmissionToDocker(port string, jsonSubmission string) (string, error) {
-	url := "http://localhost:" + port
+	url := "http://localhost:" + port + "/execute"
 
 	// Create a request body as a bytes.Buffer
 	requestBody := bytes.NewBuffer([]byte(jsonSubmission))
@@ -47,7 +48,8 @@ func SendJSONSubmissionToDocker(port string, jsonSubmission string) (string, err
 
 	// Check the response status code
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("bad response status code: %d, resp: %v", resp.StatusCode, resp)
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("bad response status code: %d, resp: %s", resp.StatusCode, body)
 	}
 
 	// Read the response body
@@ -122,6 +124,11 @@ func StartExecutionServerInDocker(port string) (*types.DockerContainer, error) {
 						HostPort: port,
 					},
 				},
+			},
+			// 10 mb, 1 cpu
+			Resources: container.Resources{
+				Memory:   10000000,
+				NanoCPUs: 1000000000,
 			},
 		}, nil, nil, "")
 	if err != nil {

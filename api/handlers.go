@@ -40,7 +40,7 @@ func getFirecrackerHandler(vmPool chan types.FirecrackerVM) http.HandlerFunc {
 		responseJSON := []byte(result.Result)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(responseJSON)
+		w.Write(responseJSON)
 	}
 }
 
