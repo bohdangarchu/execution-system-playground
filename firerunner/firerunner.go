@@ -18,7 +18,14 @@ import (
 const FIRECRACKER_BIN_PATH = "/home/bohdan/software/firecracker/build/cargo_target/x86_64-unknown-linux-musl/debug/firecracker"
 const KERNEL_IMAGE_PATH = "/home/bohdan/workspace/assets/hello-vmlinux.bin"
 
-func RunSubmissionInsideVM(jsonSubmission string) string {
+func RunSubmissionInsideVM(vm *types.FirecrackerVM, jsonSubmission string) (string, error) {
+	return executeJSONSubmissionInVM(
+		vm.Ip.String(),
+		jsonSubmission,
+	)
+}
+
+func StartVMandRunSubmission(jsonSubmission string) string {
 	startTimeStamp := time.Now()
 	logger := log.New()
 	vmID := xid.New().String()
@@ -83,7 +90,10 @@ func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error)
 
 	// Check the response status code
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("bad response status code: %d", resp.StatusCode)
+		// resp body to string
+		respBody, _ := ioutil.ReadAll(resp.Body)
+		return "",
+			fmt.Errorf("bad response status code: %d with error: %s", resp.StatusCode, respBody)
 	}
 
 	// Read the response body
@@ -95,7 +105,7 @@ func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error)
 	return string(responseBody), nil
 }
 
-func startVM() (*types.FirecrackerVM, error) {
+func StartVM() (*types.FirecrackerVM, error) {
 	// TODO test this function
 	logger := log.New()
 	vmID := xid.New().String()
@@ -122,10 +132,12 @@ func startVM() (*types.FirecrackerVM, error) {
 		log.Fatalf("Failed to start machine: %v", err)
 	}
 
-	// todo dont need to pass it actually
+	// todo dont need to pass the parameters
 	stopVMandCleanUp := func(vm *firecracker.Machine, vmID string) error {
+		fmt.Println("stoppping VM " + vmID)
 		vm.StopVMM()
 		RemoveSocket(vmID)
+		os.Remove(*vm.Cfg.Drives[0].PathOnHost)
 		vmmCancel()
 		return nil
 	}
@@ -140,37 +152,15 @@ func startVM() (*types.FirecrackerVM, error) {
 
 func RunStandaloneVM() {
 	startTime := time.Now()
-	logger := log.New()
-	vmID := xid.New().String()
-	fcCfg := getVMConfig(vmID)
-	defer RemoveSocket(vmID)
-	machineOpts := []firecracker.Opt{
-		firecracker.WithLogger(log.NewEntry(logger)),
-	}
-	ctx := context.Background()
-	vmmCtx, vmmCancel := context.WithCancel(ctx)
-	defer vmmCancel()
-	cmd := firecracker.VMCommandBuilder{}.
-		WithBin(FIRECRACKER_BIN_PATH).
-		WithSocketPath(fcCfg.SocketPath).
-		WithStdin(os.Stdin).
-		WithStdout(os.Stdout).
-		WithStderr(os.Stderr).
-		Build(ctx)
-	machineOpts = append(machineOpts, firecracker.WithProcessRunner(cmd))
-	vm, err := firecracker.NewMachine(vmmCtx, fcCfg, machineOpts...)
-
-	if err != nil {
-		log.Fatalf("Failed creating machine: %s", err)
-	}
-	if err := vm.Start(vmmCtx); err != nil {
-		log.Fatalf("Failed to start machine: %v", err)
-	}
+	vm, err := StartVM()
 	executionTime := time.Since(startTime)
+	if err != nil {
+		log.Fatalf("Failed to start VM: %v", err)
+	}
 	log.Printf("VM started in: %s", executionTime)
-	log.Printf("ip address: %s", vm.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP.String())
+	log.Printf("ip address: %s", vm.Machine.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP.String())
 
-	time.Sleep(60 * time.Second)
-	vm.StopVMM()
+	time.Sleep(1 * time.Second)
+	vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
 	log.Printf("Start machine was happy")
 }

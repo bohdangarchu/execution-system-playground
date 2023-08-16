@@ -12,7 +12,6 @@ import (
 )
 
 func RunFunctionWithInputs(submission types.FunctionSubmission) []types.TestResult {
-
 	fmt.Println("function to be executed: \n", submission.Code)
 	// creates a new V8 context with a new Isolate aka VM
 	iso := v8.NewIsolate()
@@ -23,21 +22,16 @@ func RunFunctionWithInputs(submission types.FunctionSubmission) []types.TestResu
 		// TODO add error handling
 		panic(err)
 	}
-
 	fnVal, err := ctx.Global().Get(submission.FunctionName)
-
 	if err != nil {
 		// TODO add error handling
 		panic(err)
 	}
-
 	function, err := fnVal.AsFunction()
-
 	if err != nil {
 		// TODO add error handling
 		panic(err)
 	}
-
 	results := make([]types.TestResult, len(submission.TestCases))
 	for i, testCase := range submission.TestCases {
 		// TODO add error handling
@@ -46,7 +40,6 @@ func RunFunctionWithInputs(submission types.FunctionSubmission) []types.TestResu
 			value, _ := v8.NewValue(iso, input.Value)
 			values[i] = value
 		}
-
 		val, err := function.Call(ctx.Global(), values...)
 		if err != nil {
 			// If an error occurs, create an ExecutionOutput object with the error message
@@ -59,7 +52,6 @@ func RunFunctionWithInputs(submission types.FunctionSubmission) []types.TestResu
 			}
 			continue
 		}
-
 		// If no error occurs, create an ExecutionOutput object with the actual output value
 		results[i] = types.TestResult{
 			TestCase: testCase,
