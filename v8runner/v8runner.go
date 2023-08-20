@@ -106,7 +106,7 @@ func runTestCase(ctx *v8.Context, fun *v8.Function, testCase types.TestCase) typ
 func callFunctionWithTimeout(ctx *v8.Context, fun *v8.Function, values []v8.Valuer, timeout time.Duration) (*v8.Value, error) {
 	vals := make(chan *v8.Value, 1)
 	errs := make(chan error, 1)
-	momoryErr := make(chan error, 1)
+	memoryErr := make(chan error, 1)
 	go func() {
 		val, err := fun.Call(ctx.Global(), values...)
 		if err != nil {
@@ -116,13 +116,13 @@ func callFunctionWithTimeout(ctx *v8.Context, fun *v8.Function, values []v8.Valu
 		vals <- val
 	}()
 	// 1 MB memory limit
-	go monitorMemoryUsage(ctx, momoryErr, 1000000)
+	go monitorMemoryUsage(ctx, memoryErr, 1000000)
 	select {
 	case val := <-vals:
 		return val, nil
 	case err := <-errs:
 		return nil, err
-	case <-momoryErr:
+	case <-memoryErr:
 		ctx.Isolate().TerminateExecution()
 		return nil, fmt.Errorf("memory usage exceeded")
 	case <-time.After(timeout):

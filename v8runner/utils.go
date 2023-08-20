@@ -68,7 +68,6 @@ func monitorMemoryUsage(ctx *v8.Context, momoryErr chan error, maxMemoryBytes in
 	for {
 		// in bytes
 		currentMemoryUsage := ctx.Isolate().GetHeapStatistics().UsedHeapSize
-		// 1 MB
 		if currentMemoryUsage > uint64(maxMemoryBytes) {
 			momoryErr <- fmt.Errorf("memory usage exceeded")
 			return
