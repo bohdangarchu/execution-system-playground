@@ -30,16 +30,8 @@ def get_random_submission():
 	"code": "function addTwoNumbers(a, b) {\n  return a + b;\n}",
 	"testCases": [
 	  {
-		"input": [
-		  {
-			"value": """ + str(val1) + """,
-			"type": "number"
-		  },
-		  {
-			"value": """ + str(val2) + """,
-			"type": "number"
-		  }
-		]
+      "id": "1",
+		  "input": ["1", "2"]
 	  }
 	]
 }

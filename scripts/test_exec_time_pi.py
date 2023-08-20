@@ -39,10 +39,7 @@ def get_heavy_submission():
         "code": fun,
         "testCases": [
             {
-                "input": [{
-                    "value": "10000000",
-                    "type": "number"
-                }]
+                "input": ["1000000"],
             }
         ]
     }
