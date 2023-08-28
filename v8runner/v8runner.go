@@ -119,8 +119,8 @@ func callFunctionWithTimeout(ctx *v8.Context, fun *v8.Function, values []v8.Valu
 		}
 		vals <- val
 	}()
-	// 1 MB memory limit
-	go monitorMemoryUsage(ctx, memoryErr, 1000000)
+	// 20 MB memory limit
+	go monitorMemoryUsage(ctx, memoryErr, 20000000)
 	select {
 	case val := <-vals:
 		return val, nil
