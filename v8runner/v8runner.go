@@ -12,9 +12,13 @@ import (
 	v8 "rogchap.com/v8go"
 )
 
-func RunFunctionWithInputs(submission types.FunctionSubmission) ([]types.TestResult, error) {
-	fmt.Println("function to be executed: \n", submission.Code)
+func RunSubmission(submission types.FunctionSubmission) ([]types.TestResult, error) {
 	iso := v8.NewIsolate()
+	defer iso.Dispose()
+	return RunSubmissionOnIsolate(iso, submission)
+}
+
+func RunSubmissionOnIsolate(iso *v8.Isolate, submission types.FunctionSubmission) ([]types.TestResult, error) {
 	ctx := v8.NewContext(iso)
 	_, err := ctx.RunScript(submission.Code, "main.js")
 	if err != nil {

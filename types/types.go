@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/client"
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
+	v8 "rogchap.com/v8go"
 )
 
 type InputOutput struct {
@@ -72,4 +73,8 @@ type DockerContainer struct {
 	Port        string
 	Cli         *client.Client
 	Ctx         context.Context
+}
+
+type V8Isolate struct {
+	Isolate *v8.Isolate
 }

@@ -65,6 +65,36 @@ func getDockerHandler(containerPool chan types.DockerContainer) http.HandlerFunc
 	}
 }
 
+func getV8Handler(isolatePool chan types.V8Isolate) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var functionSubmission types.FunctionSubmission
+		err := json.NewDecoder(r.Body).Decode(&functionSubmission)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to parse request body: %v", err), http.StatusBadRequest)
+			log.Println(fmt.Sprintf("failed to parse request body: %v", err))
+			return
+		}
+		iso := <-isolatePool
+		// Execute the JavaScript code
+		outputArray, err := v8runner.RunSubmissionOnIsolate(iso.Isolate, functionSubmission)
+		// push the isolate back to the pool
+		isolatePool <- iso
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to execute submission: %v", err), http.StatusInternalServerError)
+			return
+		}
+		// Convert the result to JSON
+		responseJSON, err := json.Marshal(outputArray)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to convert result to JSON: %v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(responseJSON)
+	}
+}
+
 func handleRequestWithDocker(w http.ResponseWriter, r *http.Request) {
 	var functionSubmission types.FunctionSubmission
 	err := json.NewDecoder(r.Body).Decode(&functionSubmission)
@@ -110,7 +140,7 @@ func handleRequestWithV8(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Execute the JavaScript code
-	outputArray, err := v8runner.RunFunctionWithInputs(functionSubmission)
+	outputArray, err := v8runner.RunSubmission(functionSubmission)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to execute submission: %v", err), http.StatusInternalServerError)
 		return

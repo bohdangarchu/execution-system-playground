@@ -132,7 +132,7 @@ func executeJSONSubmissionUsingV8(jsonSubmission string) (string, error) {
 	}
 
 	// Execute the JavaScript code
-	outputArray, _ := v8runner.RunFunctionWithInputs(functionSubmission)
+	outputArray, _ := v8runner.RunSubmission(functionSubmission)
 
 	// Convert the result to JSON
 	responseJSON, err := json.Marshal(outputArray)
