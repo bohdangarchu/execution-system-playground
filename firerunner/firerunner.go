@@ -106,7 +106,6 @@ func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error)
 }
 
 func StartVM() (*types.FirecrackerVM, error) {
-	// TODO test this function
 	logger := log.New()
 	vmID := xid.New().String()
 	fcCfg := getVMConfig(vmID)

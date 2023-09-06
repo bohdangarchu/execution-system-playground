@@ -5,8 +5,8 @@ import sys
 import time
 import aiohttp
 
-# URL to request
-url = "http://localhost:8080/"
+# TODO change json format
+url = "http://localhost:8080/execute"
 
 async def make_request(session: aiohttp.ClientSession):
     print(f"Making request to {url}")
@@ -39,10 +39,7 @@ def get_heavy_submission():
         "code": fun,
         "testCases": [
             {
-                "input": [{
-                    "value": "10000000",
-                    "type": "number"
-                }]
+                "input": ["1000000"],
             }
         ]
     }

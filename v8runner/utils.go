@@ -3,11 +3,13 @@ package v8runner
 import (
 	"app/types"
 	"fmt"
+	"time"
 
 	v8 "rogchap.com/v8go"
 )
 
 func v8ValueToArgument(value v8.Value) types.Argument {
+	// not used because we use JSON types
 	switch {
 	case value.IsString():
 		return types.Argument{
@@ -59,5 +61,17 @@ func v8ValueToArgument(value v8.Value) types.Argument {
 			Value: nil,
 			Type:  "unknown",
 		}
+	}
+}
+
+func monitorMemoryUsage(ctx *v8.Context, momoryErr chan error, maxMemoryBytes int64) {
+	for {
+		// in bytes
+		currentMemoryUsage := ctx.Isolate().GetHeapStatistics().UsedHeapSize
+		if currentMemoryUsage > uint64(maxMemoryBytes) {
+			momoryErr <- fmt.Errorf("memory usage exceeded")
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }

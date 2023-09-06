@@ -8,11 +8,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	v8 "rogchap.com/v8go"
 )
 
 func Run(option string, workers int) {
 	var vmPool chan types.FirecrackerVM
 	var containerPool chan types.DockerContainer
+	var isolatePool chan types.V8Isolate
 	if option == "docker" {
 		containerPool = make(chan types.DockerContainer, workers)
 		port := 8081
@@ -24,7 +27,7 @@ func Run(option string, workers int) {
 			containerPool <- *container
 			port++
 		}
-		http.HandleFunc("/", getDockerHandler(containerPool))
+		http.HandleFunc("/execute", getDockerHandler(containerPool))
 	} else if option == "firecracker" {
 		vmPool = make(chan types.FirecrackerVM, workers)
 		for i := 0; i < workers; i++ {
@@ -35,9 +38,14 @@ func Run(option string, workers int) {
 			vmPool <- *vm
 		}
 		fmt.Println("VM pool initialized")
-		http.HandleFunc("/", getFirecrackerHandler(vmPool))
+		http.HandleFunc("/execute", getFirecrackerHandler(vmPool))
 	} else {
-		http.HandleFunc("/", handleRequestWithV8)
+		isolatePool = make(chan types.V8Isolate, workers)
+		for i := 0; i < workers; i++ {
+			iso := v8.NewIsolate()
+			isolatePool <- types.V8Isolate{Isolate: iso}
+		}
+		http.HandleFunc("/execute", getV8Handler(isolatePool))
 	}
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Stopping the server...")
@@ -50,6 +58,11 @@ func Run(option string, workers int) {
 			for i := 0; i < workers; i++ {
 				vm := <-vmPool
 				vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
+			}
+		} else {
+			for i := 0; i < workers; i++ {
+				iso := <-isolatePool
+				iso.Isolate.Dispose()
 			}
 		}
 		w.WriteHeader(http.StatusOK)
