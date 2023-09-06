@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 	"net"
+	"os/exec"
 
 	"github.com/docker/docker/client"
 
@@ -77,4 +78,11 @@ type DockerContainer struct {
 
 type V8Isolate struct {
 	Isolate *v8.Isolate
+}
+
+type V8Worker struct {
+	SocketPath     string
+	ExecutablePath string
+	Pid            int
+	Cmd            *exec.Cmd
 }

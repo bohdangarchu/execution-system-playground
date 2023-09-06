@@ -5,6 +5,7 @@ import (
 	"app/firerunner"
 	"app/types"
 	"app/v8runner"
+	"app/workerrunner"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -56,6 +57,27 @@ func getDockerHandler(containerPool chan types.DockerContainer) http.HandlerFunc
 		containerPool <- container
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)
+			return
+		}
+		responseJSON := []byte(result)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(responseJSON)
+	}
+}
+
+func getWorkerHandler(workerPool chan types.V8Worker) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(r.Body)
+		jsonSubmission := buf.String()
+
+		worker := <-workerPool
+		result, err := workerrunner.SendJsonToUnixSocket(worker.SocketPath, jsonSubmission)
+		// push the worker back to the pool
+		workerPool <- worker
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to execute submission: %v", err), http.StatusInternalServerError)
 			return
 		}
 		responseJSON := []byte(result)
