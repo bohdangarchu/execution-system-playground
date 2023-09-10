@@ -24,6 +24,15 @@ func StartV8Worker() *types.V8Worker {
 	if execErr != nil {
 		println("error: ", execErr.Error())
 	}
+	// need to wait for the process to finish
+	// otherwise it will become a zombie process
+	go func() {
+		cmd.Wait()
+		fmt.Println(fmt.Sprintf("worker %s finished", id))
+		if _, err := os.Stat(socketPath); err == nil {
+			os.Remove(socketPath)
+		}
+	}()
 	pid := cmd.Process.Pid
 	println("pid of the worker: ", pid)
 	manager := createDefaultCgroup()

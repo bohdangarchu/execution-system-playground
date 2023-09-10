@@ -1,12 +1,15 @@
 package workerrunner
 
 import (
+	"app/types"
 	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"syscall"
+	"time"
 
 	"github.com/containerd/cgroups/v2/cgroup2"
 )
@@ -36,6 +39,7 @@ func SendJsonToUnixSocket(socketPath string, jsonSubmission string) (string, err
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error sending request:", err)
+		fmt.Printf("Response: %v", resp)
 		return "", err
 	}
 	defer resp.Body.Close()
@@ -72,4 +76,27 @@ func createDefaultCgroup() *cgroup2.Manager {
 		println("error: ", err.Error())
 	}
 	return manager
+}
+
+func IsProcessRunning(pid int) bool {
+	// Check if the process exists by sending signal 0 to the given PID
+	err := syscall.Kill(pid, 0)
+	if err == nil || err == syscall.EPERM {
+		return true
+	}
+	return false
+}
+
+func IsWorkerRunning(worker *types.V8Worker) bool {
+	finished := make(chan error, 1)
+	go func() {
+		err := worker.Cmd.Wait()
+		finished <- err
+	}()
+	select {
+	case <-finished:
+		return false
+	case <-time.After(10 * time.Millisecond):
+		return true
+	}
 }

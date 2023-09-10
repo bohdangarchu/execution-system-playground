@@ -62,6 +62,11 @@ func Run(option string, workers int) {
 			for i := 0; i < workers; i++ {
 				worker := <-workerPool
 				worker.Cmd.Process.Signal(os.Interrupt)
+				// check if the socket file exists
+				// if it does, remove it
+				if _, err := os.Stat(worker.SocketPath); err == nil {
+					os.Remove(worker.SocketPath)
+				}
 			}
 		}
 		w.WriteHeader(http.StatusOK)

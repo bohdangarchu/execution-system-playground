@@ -75,8 +75,13 @@ func getWorkerHandler(workerPool chan types.V8Worker) http.HandlerFunc {
 		worker := <-workerPool
 		fmt.Printf("Worker %s running job: %s", worker.Id, jsonSubmission)
 		result, err := workerrunner.SendJsonToUnixSocket(worker.SocketPath, jsonSubmission)
-		// push the worker back to the pool
-		workerPool <- worker
+		if workerrunner.IsWorkerRunning(&worker) {
+			workerPool <- worker
+		} else {
+			println("worker ", worker.Pid, " is not running, starting a new one")
+			newWorker := workerrunner.StartV8Worker()
+			workerPool <- *newWorker
+		}
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to execute submission: %v", err), http.StatusInternalServerError)
 			return
