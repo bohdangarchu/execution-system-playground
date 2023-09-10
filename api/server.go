@@ -61,7 +61,7 @@ func Run(option string, workers int) {
 		} else {
 			for i := 0; i < workers; i++ {
 				worker := <-workerPool
-				worker.Cmd.Process.Kill()
+				worker.Cmd.Process.Signal(os.Interrupt)
 			}
 		}
 		w.WriteHeader(http.StatusOK)

@@ -81,6 +81,7 @@ type V8Isolate struct {
 }
 
 type V8Worker struct {
+	Id             string
 	SocketPath     string
 	ExecutablePath string
 	Pid            int

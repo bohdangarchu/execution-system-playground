@@ -73,6 +73,7 @@ func getWorkerHandler(workerPool chan types.V8Worker) http.HandlerFunc {
 		jsonSubmission := buf.String()
 
 		worker := <-workerPool
+		fmt.Printf("Worker %s running job: %s", worker.Id, jsonSubmission)
 		result, err := workerrunner.SendJsonToUnixSocket(worker.SocketPath, jsonSubmission)
 		// push the worker back to the pool
 		workerPool <- worker

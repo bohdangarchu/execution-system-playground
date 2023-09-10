@@ -1,18 +1,14 @@
 package workerrunner
 
 import (
-	"app/types"
 	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
-	"os"
-	"os/exec"
 
 	"github.com/containerd/cgroups/v2/cgroup2"
-	"github.com/rs/xid"
 )
 
 func SendJsonToUnixSocket(socketPath string, jsonSubmission string) (string, error) {
@@ -58,33 +54,22 @@ func SendJsonToUnixSocket(socketPath string, jsonSubmission string) (string, err
 	return string(responseBody), nil
 }
 
-func StartV8Worker() *types.V8Worker {
-	// generate random id
-	id := xid.New().String()
-	socketPath := fmt.Sprintf("/tmp/worker-%s.sock", id)
-	// start the worker with the socket path
-	workerPath := "../worker/main"
-	cmd := exec.Command(workerPath, "--socket-path", socketPath)
-	// print stdout
-	cmd.Stdout = os.Stdout
-
-	execErr := cmd.Start()
-	if execErr != nil {
-		println("error: ", execErr.Error())
+func createDefaultCgroup() *cgroup2.Manager {
+	// 100 MB
+	max_mem := int64(100000000)
+	// 100000 is 100% of the CPU
+	max_cpu := uint64(100000)
+	resources := &cgroup2.Resources{
+		Memory: &cgroup2.Memory{
+			Max: &max_mem,
+		},
+		CPU: &cgroup2.CPU{
+			Weight: &max_cpu,
+		},
 	}
-	pid := cmd.Process.Pid
-	println("pid of the worker: ", pid)
-	// add the pid to the cgroup
-	manager, err := cgroup2.LoadSystemd("/", "my-cgroup-abc.slice")
-	err = manager.AddProc(uint64(pid))
-	if execErr != nil {
+	manager, err := cgroup2.NewSystemd("/", "worker.slice", -1, resources)
+	if err != nil {
 		println("error: ", err.Error())
 	}
-	// cmd.Wait()
-	return &types.V8Worker{
-		SocketPath:     socketPath,
-		ExecutablePath: workerPath,
-		Pid:            pid,
-		Cmd:            cmd,
-	}
+	return manager
 }
