@@ -8,11 +8,14 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"syscall"
 	"time"
 
 	"github.com/containerd/cgroups/v2/cgroup2"
 )
+
+const CGROUP_NAME = "worker.slice"
 
 func SendJsonToUnixSocket(socketPath string, jsonSubmission string) (string, error) {
 	// Create a custom HTTP client with a Unix domain socket transport
@@ -61,8 +64,8 @@ func SendJsonToUnixSocket(socketPath string, jsonSubmission string) (string, err
 func createDefaultCgroup() *cgroup2.Manager {
 	// 100 MB
 	max_mem := int64(100000000)
-	// 100000 is 100% of the CPU
-	max_cpu := uint64(100000)
+	// 10000 is 100% of the CPU
+	max_cpu := uint64(100)
 	resources := &cgroup2.Resources{
 		Memory: &cgroup2.Memory{
 			Max: &max_mem,
@@ -71,11 +74,25 @@ func createDefaultCgroup() *cgroup2.Manager {
 			Weight: &max_cpu,
 		},
 	}
-	manager, err := cgroup2.NewSystemd("/", "worker.slice", -1, resources)
+	manager, err := cgroup2.NewSystemd("/", CGROUP_NAME, -1, resources)
 	if err != nil {
-		println("error: ", err.Error())
+		println("error creating a cgroup: ", err.Error())
 	}
 	return manager
+}
+
+func getDefaultCgroup() *cgroup2.Manager {
+	cgroupPath := "/sys/fs/cgroup" + CGROUP_NAME + "/cgroup.controllers"
+	_, err := os.Stat(cgroupPath)
+	if os.IsNotExist(err) {
+		return createDefaultCgroup()
+	} else {
+		manager, err := cgroup2.LoadManager("/", CGROUP_NAME)
+		if err != nil {
+			println("error loading cgroup: ", err.Error())
+		}
+		return manager
+	}
 }
 
 func IsProcessRunning(pid int) bool {

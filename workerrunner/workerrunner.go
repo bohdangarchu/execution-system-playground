@@ -22,7 +22,7 @@ func StartV8Worker() *types.V8Worker {
 
 	execErr := cmd.Start()
 	if execErr != nil {
-		println("error: ", execErr.Error())
+		println("error starting the worker: ", execErr.Error())
 	}
 	// need to wait for the process to finish
 	// otherwise it will become a zombie process
@@ -35,11 +35,11 @@ func StartV8Worker() *types.V8Worker {
 	}()
 	pid := cmd.Process.Pid
 	println("pid of the worker: ", pid)
-	manager := createDefaultCgroup()
+	manager := getDefaultCgroup()
 	// add the pid to the cgroup
 	err := manager.AddProc(uint64(pid))
-	if execErr != nil {
-		println("error: ", err.Error())
+	if err != nil {
+		println("error adding process to the cgroup: ", err.Error())
 	}
 	return &types.V8Worker{
 		Id:             id,
