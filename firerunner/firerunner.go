@@ -131,8 +131,7 @@ func StartVM() (*types.FirecrackerVM, error) {
 		log.Fatalf("Failed to start machine: %v", err)
 	}
 
-	// todo dont need to pass the parameters
-	stopVMandCleanUp := func(vm *firecracker.Machine, vmID string) error {
+	stopVMandCleanUp := func() error {
 		fmt.Println("stoppping VM " + vmID)
 		vm.StopVMM()
 		RemoveSocket(vmID)
@@ -160,6 +159,6 @@ func RunStandaloneVM() {
 	log.Printf("ip address: %s", vm.Machine.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP.String())
 
 	time.Sleep(1 * time.Second)
-	vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
+	vm.StopVMandCleanUp()
 	log.Printf("Start machine was happy")
 }

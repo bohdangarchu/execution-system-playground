@@ -56,6 +56,10 @@ func (iv *implValue) Set(value string) error {
 }
 
 func main() {
+	runServer()
+}
+
+func runServer() {
 	var impl implValue = "v8"
 	var workers int = 1
 	// Define flags
@@ -71,7 +75,7 @@ func main() {
 
 func runVM() {
 	vm, err := firerunner.StartVM()
-	defer vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
+	defer vm.StopVMandCleanUp()
 	if err != nil {
 		log.Fatalf("Failed to start VM: %v", err)
 	}

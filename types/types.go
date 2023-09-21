@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 	"net"
+	"os/exec"
 
 	"github.com/docker/docker/client"
 
@@ -65,7 +66,7 @@ type FirecrackerVM struct {
 	VmmID            string
 	Machine          *firecracker.Machine
 	Ip               net.IP
-	StopVMandCleanUp func(vm *firecracker.Machine, vmID string) error
+	StopVMandCleanUp func() error
 }
 
 type DockerContainer struct {
@@ -77,4 +78,12 @@ type DockerContainer struct {
 
 type V8Isolate struct {
 	Isolate *v8.Isolate
+}
+
+type V8Worker struct {
+	Id             string
+	SocketPath     string
+	ExecutablePath string
+	Pid            int
+	Cmd            *exec.Cmd
 }

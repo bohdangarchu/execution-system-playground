@@ -13,12 +13,6 @@ import (
 	"time"
 )
 
-const (
-	firecracker = iota
-	docker
-	v8
-)
-
 var jsonSubmission = `
 {
 	"functionName": "addTwoNumbers",

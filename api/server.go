@@ -4,18 +4,18 @@ import (
 	"app/docrunner"
 	"app/firerunner"
 	"app/types"
+	"app/workerrunner"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-
-	v8 "rogchap.com/v8go"
+	"time"
 )
 
 func Run(option string, workers int) {
 	var vmPool chan types.FirecrackerVM
 	var containerPool chan types.DockerContainer
-	var isolatePool chan types.V8Isolate
+	var workerPool chan types.V8Worker
 	if option == "docker" {
 		containerPool = make(chan types.DockerContainer, workers)
 		port := 8081
@@ -30,6 +30,7 @@ func Run(option string, workers int) {
 		http.HandleFunc("/execute", getDockerHandler(containerPool))
 	} else if option == "firecracker" {
 		vmPool = make(chan types.FirecrackerVM, workers)
+		startTime := time.Now()
 		for i := 0; i < workers; i++ {
 			vm, err := firerunner.StartVM()
 			if err != nil {
@@ -37,15 +38,16 @@ func Run(option string, workers int) {
 			}
 			vmPool <- *vm
 		}
-		fmt.Println("VM pool initialized")
+		elapsed := time.Since(startTime)
+		fmt.Printf("VM pool initialized in %s\n", elapsed)
 		http.HandleFunc("/execute", getFirecrackerHandler(vmPool))
 	} else {
-		isolatePool = make(chan types.V8Isolate, workers)
+		workerPool = make(chan types.V8Worker, workers)
 		for i := 0; i < workers; i++ {
-			iso := v8.NewIsolate()
-			isolatePool <- types.V8Isolate{Isolate: iso}
+			worker := workerrunner.StartV8Worker()
+			workerPool <- *worker
 		}
-		http.HandleFunc("/execute", getV8Handler(isolatePool))
+		http.HandleFunc("/execute", getWorkerHandler(workerPool))
 	}
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Stopping the server...")
@@ -57,12 +59,17 @@ func Run(option string, workers int) {
 		} else if option == "firecracker" && vmPool != nil {
 			for i := 0; i < workers; i++ {
 				vm := <-vmPool
-				vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
+				vm.StopVMandCleanUp()
 			}
 		} else {
 			for i := 0; i < workers; i++ {
-				iso := <-isolatePool
-				iso.Isolate.Dispose()
+				worker := <-workerPool
+				worker.Cmd.Process.Signal(os.Interrupt)
+				// check if the socket file exists
+				// if it does, remove it
+				if _, err := os.Stat(worker.SocketPath); err == nil {
+					os.Remove(worker.SocketPath)
+				}
 			}
 		}
 		w.WriteHeader(http.StatusOK)
