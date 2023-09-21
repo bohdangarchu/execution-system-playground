@@ -66,7 +66,7 @@ type FirecrackerVM struct {
 	VmmID            string
 	Machine          *firecracker.Machine
 	Ip               net.IP
-	StopVMandCleanUp func(vm *firecracker.Machine, vmID string) error
+	StopVMandCleanUp func() error
 }
 
 type DockerContainer struct {

@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 func Run(option string, workers int) {
@@ -29,6 +30,7 @@ func Run(option string, workers int) {
 		http.HandleFunc("/execute", getDockerHandler(containerPool))
 	} else if option == "firecracker" {
 		vmPool = make(chan types.FirecrackerVM, workers)
+		startTime := time.Now()
 		for i := 0; i < workers; i++ {
 			vm, err := firerunner.StartVM()
 			if err != nil {
@@ -36,7 +38,8 @@ func Run(option string, workers int) {
 			}
 			vmPool <- *vm
 		}
-		fmt.Println("VM pool initialized")
+		elapsed := time.Since(startTime)
+		fmt.Printf("VM pool initialized in %s\n", elapsed)
 		http.HandleFunc("/execute", getFirecrackerHandler(vmPool))
 	} else {
 		workerPool = make(chan types.V8Worker, workers)
@@ -56,7 +59,7 @@ func Run(option string, workers int) {
 		} else if option == "firecracker" && vmPool != nil {
 			for i := 0; i < workers; i++ {
 				vm := <-vmPool
-				vm.StopVMandCleanUp(vm.Machine, vm.VmmID)
+				vm.StopVMandCleanUp()
 			}
 		} else {
 			for i := 0; i < workers; i++ {
