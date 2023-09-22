@@ -5,7 +5,6 @@ import (
 	"app/firerunner"
 	"app/types"
 	"flag"
-	"fmt"
 	"log"
 )
 
@@ -15,7 +14,7 @@ func main() {
 	pathPtr := flag.String("path", "config.json", "Path to the config")
 	flag.Parse()
 	config := LoadConfig(*pathPtr)
-	fmt.Println(config)
+	runServer(&config)
 }
 
 func runServer(config *types.Config) {
@@ -23,7 +22,7 @@ func runServer(config *types.Config) {
 }
 
 func runVM() {
-	vm, err := firerunner.StartVM()
+	vm, err := firerunner.StartVM(true)
 	defer vm.StopVMandCleanUp()
 	if err != nil {
 		log.Fatalf("Failed to start VM: %v", err)

@@ -43,6 +43,15 @@ func getUniqueDrive(id string) models.Drive {
 	}
 }
 
+func getDefaultDrive() models.Drive {
+	return models.Drive{
+		DriveID:      firecracker.String("1"),
+		PathOnHost:   firecracker.String("/home/bohdan/workspace/uni/thesis/worker/firecracker/rootfs.ext4"),
+		IsRootDevice: firecracker.Bool(true),
+		IsReadOnly:   firecracker.Bool(false),
+	}
+}
+
 func CopyBaseRootfs(id string) (string, error) {
 	// copy rootfs.ext4 to /tmp/<id>-rootfs.ext4
 	root_drive_path := "/home/bohdan/workspace/uni/thesis/worker/firecracker/rootfs.ext4"
@@ -68,14 +77,19 @@ func CopyBaseRootfs(id string) (string, error) {
 	return destinationPath, nil
 }
 
-func getVMConfig(vmID string) firecracker.Config {
+func getVMConfig(vmID string, useDefaultDrive bool) firecracker.Config {
 	// options for logging:
 	// LogPath:           "/tmp/fc.log",
 	// LogLevel:          "Debug",
 	socket_path := GetSocketPath(vmID)
 	var cpu_count int64 = 1
 	var mem_size_mib int64 = 100
-	drive := getUniqueDrive(vmID)
+	var drive models.Drive
+	if useDefaultDrive {
+		drive = getDefaultDrive()
+	} else {
+		drive = getUniqueDrive(vmID)
+	}
 	return firecracker.Config{
 		SocketPath:        socket_path,
 		KernelImagePath:   KERNEL_IMAGE_PATH,

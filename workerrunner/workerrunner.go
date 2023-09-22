@@ -9,7 +9,7 @@ import (
 	"github.com/rs/xid"
 )
 
-func StartV8Worker() *types.V8Worker {
+func StartProcessWorker() *types.V8Worker {
 	// generate random id
 	id := xid.New().String()
 	socketPath := fmt.Sprintf("/tmp/worker-%s.sock", id)

@@ -166,7 +166,7 @@ func waitForContainerRunning(cli *client.Client, containerID string) {
 		}
 
 		// Sleep for a short duration before checking again
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 

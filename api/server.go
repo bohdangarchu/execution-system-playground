@@ -13,6 +13,32 @@ import (
 )
 
 func Run(option string, workers int) {
+	if workers > 0 {
+		fmt.Printf("Running with %d %s workers\n", workers, option)
+		runInWorkerPool(option, workers)
+	} else {
+		fmt.Printf("Running with a new %s worker for each request\n", option)
+		if option == "docker" {
+			http.HandleFunc("/execute", handleRequestWithNewContainer)
+		} else if option == "firecracker" {
+			http.HandleFunc("/execute", handleRequestWithNewFirecrackerVM)
+		} else {
+			http.HandleFunc("/execute", handleRequestWithNewProcessWorker)
+		}
+		http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
+			fmt.Println("Stopping the server...")
+			w.WriteHeader(http.StatusOK)
+			os.Exit(0)
+		})
+	}
+	log.Println("Listening on :8080...")
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func runInWorkerPool(option string, workers int) {
 	var vmPool chan types.FirecrackerVM
 	var containerPool chan types.DockerContainer
 	var workerPool chan types.V8Worker
@@ -32,7 +58,7 @@ func Run(option string, workers int) {
 		vmPool = make(chan types.FirecrackerVM, workers)
 		startTime := time.Now()
 		for i := 0; i < workers; i++ {
-			vm, err := firerunner.StartVM()
+			vm, err := firerunner.StartVM(false)
 			if err != nil {
 				log.Fatalf("Failed to start VM: %v", err)
 			}
@@ -44,7 +70,7 @@ func Run(option string, workers int) {
 	} else {
 		workerPool = make(chan types.V8Worker, workers)
 		for i := 0; i < workers; i++ {
-			worker := workerrunner.StartV8Worker()
+			worker := workerrunner.StartProcessWorker()
 			workerPool <- *worker
 		}
 		http.HandleFunc("/execute", getWorkerHandler(workerPool))
@@ -75,9 +101,4 @@ func Run(option string, workers int) {
 		w.WriteHeader(http.StatusOK)
 		os.Exit(0)
 	})
-	log.Println("Listening on :8080...")
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
 }
