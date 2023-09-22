@@ -1,22 +1,15 @@
 {
-    "isolation": "docker",
+    "isolation": "firecracker",
     "workers": 0,
     "firecracker": {
         "cpuCount": 1,
-        "memSizeMib": 128,
-        "binPath": "/home/bohdan/software/firecracker/build/cargo_target/x86_64-unknown-linux-musl/debug/firecracker",
-        "kernelImagePath": "/home/bohdan/workspace/assets/hello-vmlinux.bin",
-        "rootDrivePath": "/home/bohdan/workspace/uni/thesis/worker/firecracker/rootfs.ext4"
+        "memSizeMib": 128
     },
     "docker": {
-        "imageName": "execution-server",
         "maxMemSize": 10000000,
-        "nanoCPUs": 1000000000,
-        "containerPort": 8080
+        "nanoCPUs": 1000000000
     },
     "processIsolation": {
-        "workerPath": "../worker/main",
-        "cgroupName": "worker.slice",
         "cgroupMaxMem": 100000000,
         "cgroupMaxCPU": 100
     }

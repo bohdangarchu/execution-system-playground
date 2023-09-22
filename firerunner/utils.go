@@ -77,13 +77,11 @@ func CopyBaseRootfs(id string) (string, error) {
 	return destinationPath, nil
 }
 
-func getVMConfig(vmID string, useDefaultDrive bool) firecracker.Config {
+func getVMConfig(vmID string, cpuCount int64, memSizeMib int64, useDefaultDrive bool) firecracker.Config {
 	// options for logging:
 	// LogPath:           "/tmp/fc.log",
 	// LogLevel:          "Debug",
 	socket_path := GetSocketPath(vmID)
-	var cpu_count int64 = 1
-	var mem_size_mib int64 = 100
 	var drive models.Drive
 	if useDefaultDrive {
 		drive = getDefaultDrive()
@@ -97,9 +95,9 @@ func getVMConfig(vmID string, useDefaultDrive bool) firecracker.Config {
 		Drives:            []models.Drive{drive},
 		NetworkInterfaces: getCNINetworkInterfaces(),
 		MachineCfg: models.MachineConfiguration{
-			VcpuCount:   &cpu_count,
+			VcpuCount:   &cpuCount,
 			CPUTemplate: models.CPUTemplate("C3"),
-			MemSizeMib:  &mem_size_mib,
+			MemSizeMib:  &memSizeMib,
 		},
 	}
 }

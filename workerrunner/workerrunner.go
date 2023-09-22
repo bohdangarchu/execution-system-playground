@@ -9,7 +9,7 @@ import (
 	"github.com/rs/xid"
 )
 
-func StartProcessWorker() *types.V8Worker {
+func StartProcessWorker(maxMem int, maxCpu int) *types.V8Worker {
 	// generate random id
 	id := xid.New().String()
 	socketPath := fmt.Sprintf("/tmp/worker-%s.sock", id)
@@ -35,7 +35,7 @@ func StartProcessWorker() *types.V8Worker {
 	}()
 	pid := cmd.Process.Pid
 	println("pid of the worker: ", pid)
-	manager := getDefaultCgroup()
+	manager := getCgroup(int64(maxMem), uint64(maxCpu))
 	// add the pid to the cgroup
 	err := manager.AddProc(uint64(pid))
 	if err != nil {

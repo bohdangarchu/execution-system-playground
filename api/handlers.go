@@ -68,7 +68,7 @@ func getDockerHandler(containerPool chan types.DockerContainer) http.HandlerFunc
 	}
 }
 
-func getWorkerHandler(workerPool chan types.V8Worker) http.HandlerFunc {
+func getWorkerHandler(workerPool chan types.V8Worker, config *types.ProcessIsolationConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(r.Body)
@@ -81,7 +81,10 @@ func getWorkerHandler(workerPool chan types.V8Worker) http.HandlerFunc {
 			workerPool <- worker
 		} else {
 			println("worker ", worker.Pid, " is not running, starting a new one")
-			newWorker := workerrunner.StartProcessWorker()
+			newWorker := workerrunner.StartProcessWorker(
+				config.CgroupMaxMem,
+				config.CgroupMaxCPU,
+			)
 			workerPool <- *newWorker
 		}
 		if err != nil {
@@ -95,74 +98,87 @@ func getWorkerHandler(workerPool chan types.V8Worker) http.HandlerFunc {
 	}
 }
 
-func handleRequestWithNewContainer(w http.ResponseWriter, r *http.Request) {
-	// starts a new container for each request
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(r.Body)
-	jsonSubmission := buf.String()
+func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// starts a new container for each request
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(r.Body)
+		jsonSubmission := buf.String()
 
-	container, err := docrunner.StartExecutionServerInDocker("8081")
-	time.Sleep(15 * time.Millisecond)
-	if err != nil {
-		log.Fatalf("Failed to start docker container: %v", err)
+		container, err := docrunner.StartExecutionServerInDocker(
+			"8081",
+			int64(config.Docker.MaxMemSize),
+			int64(config.Docker.NanoCPUs),
+		)
+		time.Sleep(50 * time.Millisecond)
+		if err != nil {
+			log.Fatalf("Failed to start docker container: %v", err)
+		}
+		fmt.Printf("Container %s running job: %s\n", container.ContainerId, jsonSubmission)
+		result, err := docrunner.SendJSONSubmissionToDocker(container.Port, jsonSubmission)
+		defer docrunner.KillContainerAndGetLogs(container)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)
+			return
+		}
+		responseJSON := []byte(result)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(responseJSON)
 	}
-	fmt.Printf("Container %s running job: %s", container.ContainerId, jsonSubmission)
-	result, err := docrunner.SendJSONSubmissionToDocker(container.Port, jsonSubmission)
-	defer docrunner.KillContainerAndGetLogs(container)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)
-		return
-	}
-	responseJSON := []byte(result)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(responseJSON)
 }
 
-func handleRequestWithNewFirecrackerVM(w http.ResponseWriter, r *http.Request) {
-	// starts a new VM for each request
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(r.Body)
-	jsonSubmission := buf.String()
+func getFirecrackerHandlerWithNewVM(config *types.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// starts a new VM for each request
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(r.Body)
+		jsonSubmission := buf.String()
 
-	vm, err := firerunner.StartVM(true)
-	if err != nil {
-		log.Fatalf("Failed to start VM: %v", err)
+		vm, err := firerunner.StartVM(true, config.Firecracker)
+		if err != nil {
+			log.Fatalf("Failed to start VM: %v", err)
+		}
+		fmt.Printf("VM %s running job: %s", vm.VmmID, jsonSubmission)
+		result, err := firerunner.RunSubmissionInsideVM(vm, jsonSubmission)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)
+			return
+		}
+		vm.StopVMandCleanUp()
+		responseJSON := []byte(result)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(responseJSON)
 	}
-	fmt.Printf("VM %s running job: %s", vm.VmmID, jsonSubmission)
-	result, err := firerunner.RunSubmissionInsideVM(vm, jsonSubmission)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)
-		return
-	}
-	vm.StopVMandCleanUp()
-	responseJSON := []byte(result)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(responseJSON)
 }
 
-func handleRequestWithNewProcessWorker(w http.ResponseWriter, r *http.Request) {
-	// starts a new worker for each request
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(r.Body)
-	jsonSubmission := buf.String()
+func getWorkerHandlerWithNewWorker(config *types.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// starts a new worker for each request
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(r.Body)
+		jsonSubmission := buf.String()
 
-	worker := workerrunner.StartProcessWorker()
-	fmt.Printf("Worker %s running job: %s", worker.Id, jsonSubmission)
-	result, err := workerrunner.SendJsonToUnixSocket(worker.SocketPath, jsonSubmission)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to execute submission: %v", err), http.StatusInternalServerError)
-		return
+		worker := workerrunner.StartProcessWorker(
+			config.ProcessIsolation.CgroupMaxMem,
+			config.ProcessIsolation.CgroupMaxCPU,
+		)
+		fmt.Printf("Worker %s running job: %s", worker.Id, jsonSubmission)
+		result, err := workerrunner.SendJsonToUnixSocket(worker.SocketPath, jsonSubmission)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to execute submission: %v", err), http.StatusInternalServerError)
+			return
+		}
+		worker.Cmd.Process.Signal(os.Interrupt)
+		if _, err := os.Stat(worker.SocketPath); err == nil {
+			os.Remove(worker.SocketPath)
+		}
+		responseJSON := []byte(result)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(responseJSON)
 	}
-	worker.Cmd.Process.Signal(os.Interrupt)
-	if _, err := os.Stat(worker.SocketPath); err == nil {
-		os.Remove(worker.SocketPath)
-	}
-	responseJSON := []byte(result)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(responseJSON)
 }
 
 func getV8Handler(isolatePool chan types.V8Isolate) http.HandlerFunc {

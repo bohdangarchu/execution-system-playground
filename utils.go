@@ -12,21 +12,14 @@ var defaultConfig = types.Config{
 	Isolation: "docker",
 	Workers:   1,
 	Firecracker: &types.FirecrackerConfig{
-		CPUCount:        1,
-		MemSizeMib:      128,
-		BinPath:         "/home/bohdan/software/firecracker/build/cargo_target/x86_64-unknown-linux-musl/debug/firecracker",
-		KernelImagePath: "/home/bohdan/workspace/assets/hello-vmlinux.bin",
-		RootDrivePath:   "/home/bohdan/workspace/uni/thesis/worker/firecracker/rootfs.ext4",
+		CPUCount:   1,
+		MemSizeMib: 128,
 	},
 	Docker: &types.DockerConfig{
-		ImageName:     "execution-server",
-		MaxMemSize:    10000000,
-		NanoCPUs:      1000000000,
-		ContainerPort: 8080,
+		MaxMemSize: 10000000,
+		NanoCPUs:   1000000000,
 	},
 	ProcessIsolation: &types.ProcessIsolationConfig{
-		WorkerPath:   "../worker/main",
-		CgroupName:   "worker.slice",
 		CgroupMaxMem: 100000000,
 		CgroupMaxCPU: 100,
 	},
@@ -67,9 +60,6 @@ func LoadConfig(path string) types.Config {
 	}
 	if config.Docker.NanoCPUs < 0 {
 		panic("Docker nano CPUs cannot be negative")
-	}
-	if config.Docker.ContainerPort < 0 {
-		panic("Docker container port cannot be negative")
 	}
 	if config.Firecracker.CPUCount < 0 {
 		panic("Firecracker CPU count cannot be negative")

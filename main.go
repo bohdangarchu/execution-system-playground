@@ -18,11 +18,14 @@ func main() {
 }
 
 func runServer(config *types.Config) {
-	api.Run(config.Isolation, config.Workers)
+	api.Run(config)
 }
 
 func runVM() {
-	vm, err := firerunner.StartVM(true)
+	vm, err := firerunner.StartVM(true, &types.FirecrackerConfig{
+		CPUCount:   1,
+		MemSizeMib: 128,
+	})
 	defer vm.StopVMandCleanUp()
 	if err != nil {
 		log.Fatalf("Failed to start VM: %v", err)

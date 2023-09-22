@@ -12,18 +12,18 @@ import (
 	"time"
 )
 
-func Run(option string, workers int) {
-	if workers > 0 {
-		fmt.Printf("Running with %d %s workers\n", workers, option)
-		runInWorkerPool(option, workers)
+func Run(config *types.Config) {
+	if config.Workers > 0 {
+		fmt.Printf("Running with %d %s workers\n", config.Workers, config.Isolation)
+		runInWorkerPool(config)
 	} else {
-		fmt.Printf("Running with a new %s worker for each request\n", option)
-		if option == "docker" {
-			http.HandleFunc("/execute", handleRequestWithNewContainer)
-		} else if option == "firecracker" {
-			http.HandleFunc("/execute", handleRequestWithNewFirecrackerVM)
+		fmt.Printf("Running with a new %s worker for each request\n", config.Isolation)
+		if config.Isolation == "docker" {
+			http.HandleFunc("/execute", getDockerHandlerWithNewContainer(config))
+		} else if config.Isolation == "firecracker" {
+			http.HandleFunc("/execute", getFirecrackerHandlerWithNewVM(config))
 		} else {
-			http.HandleFunc("/execute", handleRequestWithNewProcessWorker)
+			http.HandleFunc("/execute", getWorkerHandlerWithNewWorker(config))
 		}
 		http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Stopping the server...")
@@ -38,15 +38,19 @@ func Run(option string, workers int) {
 	}
 }
 
-func runInWorkerPool(option string, workers int) {
+func runInWorkerPool(config *types.Config) {
 	var vmPool chan types.FirecrackerVM
 	var containerPool chan types.DockerContainer
 	var workerPool chan types.V8Worker
-	if option == "docker" {
-		containerPool = make(chan types.DockerContainer, workers)
+	if config.Isolation == "docker" {
+		containerPool = make(chan types.DockerContainer, config.Workers)
 		port := 8081
-		for i := 0; i < workers; i++ {
-			container, err := docrunner.StartExecutionServerInDocker(fmt.Sprintf("%d", port))
+		for i := 0; i < config.Workers; i++ {
+			container, err := docrunner.StartExecutionServerInDocker(
+				fmt.Sprintf("%d", port),
+				int64(config.Docker.MaxMemSize),
+				int64(config.Docker.NanoCPUs),
+			)
 			if err != nil {
 				log.Fatalf("Failed to start docker container: %v", err)
 			}
@@ -54,11 +58,11 @@ func runInWorkerPool(option string, workers int) {
 			port++
 		}
 		http.HandleFunc("/execute", getDockerHandler(containerPool))
-	} else if option == "firecracker" {
-		vmPool = make(chan types.FirecrackerVM, workers)
+	} else if config.Isolation == "firecracker" {
+		vmPool = make(chan types.FirecrackerVM, config.Workers)
 		startTime := time.Now()
-		for i := 0; i < workers; i++ {
-			vm, err := firerunner.StartVM(false)
+		for i := 0; i < config.Workers; i++ {
+			vm, err := firerunner.StartVM(false, config.Firecracker)
 			if err != nil {
 				log.Fatalf("Failed to start VM: %v", err)
 			}
@@ -68,27 +72,30 @@ func runInWorkerPool(option string, workers int) {
 		fmt.Printf("VM pool initialized in %s\n", elapsed)
 		http.HandleFunc("/execute", getFirecrackerHandler(vmPool))
 	} else {
-		workerPool = make(chan types.V8Worker, workers)
-		for i := 0; i < workers; i++ {
-			worker := workerrunner.StartProcessWorker()
+		workerPool = make(chan types.V8Worker, config.Workers)
+		for i := 0; i < config.Workers; i++ {
+			worker := workerrunner.StartProcessWorker(
+				config.ProcessIsolation.CgroupMaxMem,
+				config.ProcessIsolation.CgroupMaxCPU,
+			)
 			workerPool <- *worker
 		}
-		http.HandleFunc("/execute", getWorkerHandler(workerPool))
+		http.HandleFunc("/execute", getWorkerHandler(workerPool, config.ProcessIsolation))
 	}
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Stopping the server...")
-		if option == "docker" && containerPool != nil {
-			for i := 0; i < workers; i++ {
+		if config.Isolation == "docker" && containerPool != nil {
+			for i := 0; i < config.Workers; i++ {
 				container := <-containerPool
 				docrunner.KillContainerAndGetLogs(&container)
 			}
-		} else if option == "firecracker" && vmPool != nil {
-			for i := 0; i < workers; i++ {
+		} else if config.Isolation == "firecracker" && vmPool != nil {
+			for i := 0; i < config.Workers; i++ {
 				vm := <-vmPool
 				vm.StopVMandCleanUp()
 			}
 		} else {
-			for i := 0; i < workers; i++ {
+			for i := 0; i < config.Workers; i++ {
 				worker := <-workerPool
 				worker.Cmd.Process.Signal(os.Interrupt)
 				// check if the socket file exists
