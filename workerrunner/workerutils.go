@@ -78,16 +78,23 @@ func createCgroup(maxMem int64, maxCpu uint64) *cgroup2.Manager {
 }
 
 func getCgroup(maxMem int64, maxCpu uint64) *cgroup2.Manager {
-	cgroupPath := "/sys/fs/cgroup" + CGROUP_NAME + "/cgroup.controllers"
+	cgroupPath := "/sys/fs/cgroup/" + CGROUP_NAME + "/cgroup.controllers"
 	_, err := os.Stat(cgroupPath)
-	// TODO if the cgroup exists, update the resources (maxMem, maxCpu)
 	if os.IsNotExist(err) {
 		return createCgroup(maxMem, maxCpu)
 	} else {
-		manager, err := cgroup2.LoadManager("/", CGROUP_NAME)
+		manager, err := cgroup2.LoadManager("/sys/fs/cgroup/", "/"+CGROUP_NAME)
 		if err != nil {
-			println("error loading cgroup: ", err.Error())
+			fmt.Printf("error loading cgroup: %s", err.Error())
 		}
+		manager.Update(&cgroup2.Resources{
+			Memory: &cgroup2.Memory{
+				Max: &maxMem,
+			},
+			CPU: &cgroup2.CPU{
+				Weight: &maxCpu,
+			},
+		})
 		return manager
 	}
 }
