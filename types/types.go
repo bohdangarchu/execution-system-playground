@@ -16,15 +16,10 @@ type InputOutput struct {
 	ExpectedOutput string
 }
 
-type FunctionSubmissionOld struct {
-	FunctionName    string
-	ParameterString string
-	CodeSubmission  string
-}
-
 // use the types below for the rest api interface
 type FunctionSubmission struct {
 	FunctionName string     `json:"functionName"`
+	Language     string     `json:"language"`
 	Code         string     `json:"code"`
 	TestCases    []TestCase `json:"testCases"`
 }
