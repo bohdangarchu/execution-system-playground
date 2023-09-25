@@ -61,17 +61,13 @@ func SendJsonToUnixSocket(socketPath string, jsonSubmission string) (string, err
 	return string(responseBody), nil
 }
 
-func createDefaultCgroup() *cgroup2.Manager {
-	// 100 MB
-	max_mem := int64(100000000)
-	// 10000 is 100% of the CPU
-	max_cpu := uint64(100)
+func createCgroup(maxMem int64, maxCpu uint64) *cgroup2.Manager {
 	resources := &cgroup2.Resources{
 		Memory: &cgroup2.Memory{
-			Max: &max_mem,
+			Max: &maxMem,
 		},
 		CPU: &cgroup2.CPU{
-			Weight: &max_cpu,
+			Weight: &maxCpu,
 		},
 	}
 	manager, err := cgroup2.NewSystemd("/", CGROUP_NAME, -1, resources)
@@ -81,16 +77,24 @@ func createDefaultCgroup() *cgroup2.Manager {
 	return manager
 }
 
-func getDefaultCgroup() *cgroup2.Manager {
-	cgroupPath := "/sys/fs/cgroup" + CGROUP_NAME + "/cgroup.controllers"
+func getCgroup(maxMem int64, maxCpu uint64) *cgroup2.Manager {
+	cgroupPath := "/sys/fs/cgroup/" + CGROUP_NAME + "/cgroup.controllers"
 	_, err := os.Stat(cgroupPath)
 	if os.IsNotExist(err) {
-		return createDefaultCgroup()
+		return createCgroup(maxMem, maxCpu)
 	} else {
-		manager, err := cgroup2.LoadManager("/", CGROUP_NAME)
+		manager, err := cgroup2.LoadManager("/sys/fs/cgroup/", "/"+CGROUP_NAME)
 		if err != nil {
-			println("error loading cgroup: ", err.Error())
+			fmt.Printf("error loading cgroup: %s", err.Error())
 		}
+		manager.Update(&cgroup2.Resources{
+			Memory: &cgroup2.Memory{
+				Max: &maxMem,
+			},
+			CPU: &cgroup2.CPU{
+				Weight: &maxCpu,
+			},
+		})
 		return manager
 	}
 }

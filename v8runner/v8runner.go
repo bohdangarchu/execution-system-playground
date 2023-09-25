@@ -3,7 +3,6 @@ package v8runner
 import (
 	"bytes"
 	"fmt"
-	"strings"
 	"time"
 
 	"app/types"
@@ -151,63 +150,4 @@ func ExecuteJsWithConsoleOutput(code string) (string, error) {
 	}
 	logs := buf.String()
 	return logs, nil
-}
-
-func RunFunctionWithInputsManual(submission types.FunctionSubmissionOld, inOutArray []types.InputOutput) {
-	// not used
-	// calls the function manually
-
-	functionCode := fmt.Sprintf(
-		`function %s (%s) {
-	%s
-}`, submission.FunctionName, submission.ParameterString, submission.CodeSubmission)
-
-	fmt.Println("function to be tested: \n", functionCode)
-	// creates a new V8 context with a new Isolate aka VM
-	ctx := v8.NewContext()
-	// executes a script on the global context
-	_, err := ctx.RunScript(functionCode, "math.js")
-	if err != nil {
-		panic(err)
-	}
-
-	for _, inOut := range inOutArray {
-		params := strings.Join(inOut.Input, ", ")
-		val, err := ctx.RunScript(
-			fmt.Sprintf("%s(%s);", submission.FunctionName, params),
-			"main.js",
-		)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("function execution result: %s\n", val)
-		fmt.Printf("expected output: %s\n", inOut.ExpectedOutput)
-	}
-}
-
-func ExecuteJavaScript(code string) (string, error) {
-	// not used
-	// for every console.log the logMessages variable gets updated
-	// and is returned in the end
-	// v8console ("go.kuoruan.net/v8go-polyfills/console") should be used instead
-	iso := v8.NewIsolate()
-
-	ctx := v8.NewContext(iso)
-
-	ctx.RunScript("var logMessages = [];", "main.js")
-	ctx.RunScript("console.log = function() { logMessages.push.apply(logMessages, arguments); };", "main.js")
-
-	_, err := ctx.RunScript(code, "main.js")
-
-	if err != nil {
-		return "", err
-	}
-
-	output, err := ctx.RunScript("logMessages", "main.js")
-
-	if err != nil {
-		return "", err
-	}
-
-	return output.String(), nil
 }

@@ -29,7 +29,7 @@ func StartVMandRunSubmission(jsonSubmission string) string {
 	startTimeStamp := time.Now()
 	logger := log.New()
 	vmID := xid.New().String()
-	fcCfg := getVMConfig(vmID)
+	fcCfg := getVMConfig(vmID, 1, 128, false)
 	defer RemoveSocket(vmID)
 	machineOpts := []firecracker.Opt{
 		firecracker.WithLogger(log.NewEntry(logger)),
@@ -105,10 +105,10 @@ func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error)
 	return string(responseBody), nil
 }
 
-func StartVM() (*types.FirecrackerVM, error) {
+func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig) (*types.FirecrackerVM, error) {
 	logger := log.New()
 	vmID := xid.New().String()
-	fcCfg := getVMConfig(vmID)
+	fcCfg := getVMConfig(vmID, int64(config.CPUCount), int64(config.MemSizeMib), useDefaultDrive)
 	machineOpts := []firecracker.Opt{
 		firecracker.WithLogger(log.NewEntry(logger)),
 	}
@@ -135,7 +135,9 @@ func StartVM() (*types.FirecrackerVM, error) {
 		fmt.Println("stoppping VM " + vmID)
 		vm.StopVMM()
 		RemoveSocket(vmID)
-		os.Remove(*vm.Cfg.Drives[0].PathOnHost)
+		if !useDefaultDrive {
+			os.Remove(*vm.Cfg.Drives[0].PathOnHost)
+		}
 		vmmCancel()
 		return nil
 	}
@@ -150,7 +152,10 @@ func StartVM() (*types.FirecrackerVM, error) {
 
 func RunStandaloneVM() {
 	startTime := time.Now()
-	vm, err := StartVM()
+	vm, err := StartVM(true, &types.FirecrackerConfig{
+		CPUCount:   1,
+		MemSizeMib: 128,
+	})
 	executionTime := time.Since(startTime)
 	if err != nil {
 		log.Fatalf("Failed to start VM: %v", err)
