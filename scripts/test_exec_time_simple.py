@@ -7,26 +7,25 @@ import aiohttp
 
 url = "http://localhost:8080/execute"
 
-async def make_request(session: aiohttp.ClientSession, response_status_codes, lock):
+async def make_request(session: aiohttp.ClientSession, non_200_responses, lock):
     print(f"Making request to {url}")
     submission = get_random_submission()
     # send a post request with submission to the URL
     async with session.post(url, data=submission) as response:
         response_text = await response.text()
-        print(f"Response: {response_text} for submission {submission}")
         async with lock:
-            response_status_codes.append(response.status)
+            if response.status != 200:
+                non_200_responses.append(response_text)
 
 async def main(concurrent_requests=5):
     async with aiohttp.ClientSession() as session:
-        response_status_codes = []
+        non_200_responses = []
         lock = asyncio.Lock()
-        tasks = [make_request(session, response_status_codes, lock) for _ in range(concurrent_requests)]
+        tasks = [make_request(session, non_200_responses, lock) for _ in range(concurrent_requests)]
         await asyncio.gather(*tasks)
         
-        # Count how many responses had a status code different from 200
-        non_200_count = len([status for status in response_status_codes if status != 200])
-        print(f"Number of responses with status code other than 200: {non_200_count}")
+        for response in non_200_responses:
+            print(response)
 
 
 def get_random_submission():
