@@ -35,6 +35,7 @@ func StartContainerAndRunSubmission(jsonSubmission string) (string, error) {
 
 func SendJSONSubmissionToDocker(port string, jsonSubmission string) (string, error) {
 	url := "http://localhost:" + port + "/execute"
+	fmt.Printf("Sending request to %s\n", url)
 
 	// Create a request body as a bytes.Buffer
 	requestBody := bytes.NewBuffer([]byte(jsonSubmission))
@@ -139,10 +140,12 @@ func StartExecutionServerInDocker(port string, maxMemory int64, nanoCPUs int64) 
 	if err := cli.ContainerStart(ctx, resp.ID, dockertypes.ContainerStartOptions{}); err != nil {
 		return nil, err
 	}
+	container, _ := cli.ContainerInspect(ctx, resp.ID)
+	realPort := container.NetworkSettings.Ports["8080/tcp"][0].HostPort
 	waitForContainerRunning(cli, resp.ID)
 	return &types.DockerContainer{
 		ContainerId: resp.ID,
-		Port:        port,
+		Port:        realPort,
 		Cli:         cli,
 		Ctx:         ctx,
 	}, nil

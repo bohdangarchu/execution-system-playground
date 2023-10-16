@@ -1,3 +1,6 @@
+Config example 
+
+```
 {
     "isolation": "docker",
     "workers": 0,
@@ -14,3 +17,4 @@
         "cgroupMaxCPU": 100
     }
 }
+```

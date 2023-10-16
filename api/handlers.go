@@ -106,15 +106,16 @@ func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 		jsonSubmission := buf.String()
 
 		container, err := docrunner.StartExecutionServerInDocker(
-			"8081",
+			// with 0 docker will pick an available port
+			"0",
 			int64(config.Docker.MaxMemSize),
 			int64(config.Docker.NanoCPUs),
 		)
 		time.Sleep(50 * time.Millisecond)
 		if err != nil {
-			log.Fatalf("Failed to start docker container: %v", err)
+			http.Error(w, fmt.Sprintf("failed to start docker container: %v", err), http.StatusInternalServerError)
+			return
 		}
-		fmt.Printf("Container %s running job: %s\n", container.ContainerId, jsonSubmission)
 		result, err := docrunner.SendJSONSubmissionToDocker(container.Port, jsonSubmission)
 		defer docrunner.KillContainerAndGetLogs(container)
 		if err != nil {
