@@ -66,14 +66,16 @@ func KillContainerAndGetLogs(dockerContainer *types.DockerContainer) {
 	// kill the container
 	err := KillDockerContainer(dockerContainer)
 	if err != nil {
-		panic(err)
+		fmt.Println("failed to kill container: ", err)
 	}
 	// Retrieve the logs of the container
 	logs, err := RetrieveLogsFromDockerContainer(dockerContainer)
 	if err != nil {
-		panic(err)
+		fmt.Println("failed to retrieve logs: ", err)
 	}
-	fmt.Println("logs: ", logs)
+	fmt.Printf("Logs from container with port %s\n", dockerContainer.Port)
+	fmt.Println(logs)
+	fmt.Println("--------------------------------------------------")
 }
 
 func RetrieveLogsFromDockerContainer(dockerContainer *types.DockerContainer) (string, error) {

@@ -111,13 +111,13 @@ func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 			int64(config.Docker.MaxMemSize),
 			int64(config.Docker.NanoCPUs),
 		)
-		time.Sleep(50 * time.Millisecond)
+		defer docrunner.KillContainerAndGetLogs(container)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to start docker container: %v", err), http.StatusInternalServerError)
 			return
 		}
+		time.Sleep(50 * time.Millisecond)
 		result, err := docrunner.SendJSONSubmissionToDocker(container.Port, jsonSubmission)
-		defer docrunner.KillContainerAndGetLogs(container)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)
 			return

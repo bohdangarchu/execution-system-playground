@@ -5,33 +5,41 @@ import sys
 import time
 import aiohttp
 
-# TODO change json format
 url = "http://localhost:8080/execute"
 
-async def make_request(session: aiohttp.ClientSession):
+async def make_request(session: aiohttp.ClientSession, response_status_codes, lock):
     print(f"Making request to {url}")
-    submission=get_random_submission()
-    # send a post reqeust with submission to the url
+    submission = get_random_submission()
+    # send a post request with submission to the URL
     async with session.post(url, data=submission) as response:
         response_text = await response.text()
         print(f"Response: {response_text} for submission {submission}")
+        async with lock:
+            response_status_codes.append(response.status)
 
 async def main(concurrent_requests=5):
     async with aiohttp.ClientSession() as session:
-        tasks = [make_request(session) for _ in range(concurrent_requests)]
+        response_status_codes = []
+        lock = asyncio.Lock()
+        tasks = [make_request(session, response_status_codes, lock) for _ in range(concurrent_requests)]
         await asyncio.gather(*tasks)
+        
+        # Count how many responses had a status code different from 200
+        non_200_count = len([status for status in response_status_codes if status != 200])
+        print(f"Number of responses with status code other than 200: {non_200_count}")
+
 
 def get_random_submission():
-    val1 = random.randint(-100, 100)
-    val2 = random.randint(-100, 100)
+    val = random.randint(-1000, 1000)
     return r"""
 {
 	"functionName": "addTwoNumbers",
-	"code": "function addTwoNumbers(a, b) {\n  return a + b;\n}",
+	"code": "function addTwoNumbers(a, b) {\n  return a + b + """ + str(val) + r""";\n}",
+    "language": "js",
 	"testCases": [
 	  {
-      "id": "1",
-		  "input": ["1", "2"]
+        "id": "1",
+		"input": ["1", "2"]
 	  }
 	]
 }
