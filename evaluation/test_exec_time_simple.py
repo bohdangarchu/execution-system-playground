@@ -9,7 +9,7 @@ url = "http://localhost:8080/execute"
 
 async def make_request(session: aiohttp.ClientSession, non_200_responses, lock):
     print(f"Making request to {url}")
-    submission = get_random_submission()
+    submission = get_submission()
     # send a post request with submission to the URL
     async with session.post(url, data=submission) as response:
         response_text = await response.text()
@@ -30,12 +30,11 @@ async def main(concurrent_requests=5):
             print(response)
 
 
-def get_random_submission():
-    val = random.randint(-1000, 1000)
+def get_submission():
     return r"""
 {
 	"functionName": "addTwoNumbers",
-	"code": "function addTwoNumbers(a, b) {\n  return a + b + """ + str(val) + r""";\n}",
+	"code": "function addTwoNumbers(a, b) {\n  return a + b;\n}",
     "language": "js",
 	"testCases": [
 	  {
