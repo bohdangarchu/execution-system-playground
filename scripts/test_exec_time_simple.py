@@ -24,6 +24,8 @@ async def main(concurrent_requests=5):
         tasks = [make_request(session, non_200_responses, lock) for _ in range(concurrent_requests)]
         await asyncio.gather(*tasks)
         
+        print(f"Number of non-200 responses: {len(non_200_responses)}")
+        print("Non-200 responses:")
         for response in non_200_responses:
             print(response)
 

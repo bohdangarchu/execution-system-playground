@@ -1,6 +1,6 @@
 {
-    "isolation": "docker",
-    "workers": 0,
+    "isolation": "process",
+    "workers": 2,
     "firecracker": {
         "cpuCount": 1,
         "memSizeMib": 128

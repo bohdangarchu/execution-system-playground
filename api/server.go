@@ -57,6 +57,7 @@ func runInWorkerPool(config *types.Config) {
 			containerPool <- *container
 			port++
 		}
+		go monitorContainerHealth(containerPool, config)
 		http.HandleFunc("/execute", getDockerHandler(containerPool))
 	} else if config.Isolation == "firecracker" {
 		vmPool = make(chan types.FirecrackerVM, config.Workers)
@@ -70,6 +71,7 @@ func runInWorkerPool(config *types.Config) {
 		}
 		elapsed := time.Since(startTime)
 		fmt.Printf("VM pool initialized in %s\n", elapsed)
+		go monitorVMHealth(vmPool, config)
 		http.HandleFunc("/execute", getFirecrackerHandler(vmPool))
 	} else {
 		workerPool = make(chan types.V8Worker, config.Workers)
@@ -80,6 +82,7 @@ func runInWorkerPool(config *types.Config) {
 			)
 			workerPool <- *worker
 		}
+		go monitorV8Worker(workerPool, config.ProcessIsolation)
 		http.HandleFunc("/execute", getWorkerHandler(workerPool, config.ProcessIsolation))
 	}
 	http.HandleFunc("/kill", func(w http.ResponseWriter, r *http.Request) {
@@ -97,12 +100,7 @@ func runInWorkerPool(config *types.Config) {
 		} else {
 			for i := 0; i < config.Workers; i++ {
 				worker := <-workerPool
-				worker.Cmd.Process.Signal(os.Interrupt)
-				// check if the socket file exists
-				// if it does, remove it
-				if _, err := os.Stat(worker.SocketPath); err == nil {
-					os.Remove(worker.SocketPath)
-				}
+				workerrunner.KillWorker(&worker)
 			}
 		}
 		w.WriteHeader(http.StatusOK)

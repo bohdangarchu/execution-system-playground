@@ -121,3 +121,42 @@ func IsWorkerRunning(worker *types.V8Worker) bool {
 		return true
 	}
 }
+
+func KillWorker(worker *types.V8Worker) {
+	worker.Cmd.Process.Signal(os.Interrupt)
+	// check if the socket file exists
+	// if it does, remove it
+	if _, err := os.Stat(worker.SocketPath); err == nil {
+		os.Remove(worker.SocketPath)
+	}
+}
+
+func CheckWorkerHealth(worker *types.V8Worker) bool {
+	if !IsWorkerRunning(worker) {
+		return false
+	}
+	client := &http.Client{
+		Transport: &http.Transport{
+			Dial: func(proto, addr string) (conn net.Conn, err error) {
+				return net.Dial("unix", worker.SocketPath)
+			},
+		},
+	}
+	url := "http://localhost/health"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return false
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		fmt.Printf("Response: %v", resp)
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+	return true
+}

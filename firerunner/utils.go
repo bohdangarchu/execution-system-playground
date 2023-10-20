@@ -1,7 +1,9 @@
 package firerunner
 
 import (
+	"app/types"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -100,4 +102,19 @@ func getVMConfig(vmID string, cpuCount int64, memSizeMib int64, useDefaultDrive 
 			MemSizeMib:  &memSizeMib,
 		},
 	}
+}
+
+func CheckVMHealth(vm *types.FirecrackerVM) bool {
+	url := "http://" + vm.Ip.String() + ":8080/health"
+	resp, err := http.Get(url)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	// check response status code
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+	return true
 }
