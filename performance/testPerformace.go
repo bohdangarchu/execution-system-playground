@@ -150,19 +150,3 @@ func killContainerAndGetLogs(dockerContainer *types.DockerContainer) {
 	}
 	fmt.Println("logs: ", logs)
 }
-
-// func CompareDockerAndV8() {
-// 	// compares v8 with v8 in docker (doesn't include docker startup time)
-// 	outputV8, errV8, timeV8 := ExecuteWithTime(jsonSubmission, executeJSONSubmissionUsingV8)
-// 	if errV8 != nil {
-// 		panic(errV8)
-// 	}
-// 	fmt.Println("output v8: ", outputV8)
-// 	fmt.Println("time v8: ", timeV8)
-// 	outputDocker, errDocker, timeDocker := ExecuteWithTime(jsonSubmission, SendSubmissionToUrl)
-// 	if errDocker != nil {
-// 		panic(errDocker)
-// 	}
-// 	fmt.Println("output docker: ", outputDocker)
-// 	fmt.Println("time docker: ", timeDocker)
-// }

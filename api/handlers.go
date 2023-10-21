@@ -136,7 +136,7 @@ func getFirecrackerHandlerWithNewVM(config *types.Config) http.HandlerFunc {
 		buf.ReadFrom(r.Body)
 		jsonSubmission := buf.String()
 
-		vm, err := firerunner.StartVM(true, config.Firecracker)
+		vm, err := firerunner.StartVM(false, config.Firecracker)
 		if err != nil {
 			log.Fatalf("Failed to start VM: %v", err)
 		}

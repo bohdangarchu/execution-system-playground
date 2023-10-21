@@ -8,11 +8,15 @@ import aiohttp
 url = "http://localhost:8080/execute"
 
 async def make_request(session: aiohttp.ClientSession, non_200_responses, lock):
+    start_time = time.time()
     print(f"Making request to {url}")
     submission = get_submission()
     # send a post request with submission to the URL
     async with session.post(url, data=submission) as response:
         response_text = await response.text()
+        end_time = time.time()
+        print(f"Time taken: {end_time - start_time} seconds")
+        print(f"Response: {response_text}")
         async with lock:
             if response.status != 200:
                 non_200_responses.append(response_text)

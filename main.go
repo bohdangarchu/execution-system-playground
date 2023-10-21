@@ -11,14 +11,15 @@ import (
 var allowedImplValues = []string{"docker", "firecracker", "process"}
 
 func main() {
+	// performance.MeasureStartupTimes()
+	runServer()
+}
+
+func runServer() {
 	pathPtr := flag.String("path", "config.json", "Path to the config")
 	flag.Parse()
 	config := LoadConfig(*pathPtr)
-	runServer(&config)
-}
-
-func runServer(config *types.Config) {
-	api.Run(config)
+	api.Run(&config)
 }
 
 func runVM() {

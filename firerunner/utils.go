@@ -2,10 +2,13 @@ package firerunner
 
 import (
 	"app/types"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
 	models "github.com/firecracker-microvm/firecracker-go-sdk/client/models"
@@ -33,9 +36,12 @@ func getStaticNetworkInterfaces() []firecracker.NetworkInterface {
 }
 
 func getUniqueDrive(id string) models.Drive {
-	path, err := CopyBaseRootfs(id)
+	startTime := time.Now()
+	path, err := CopyBaseRootfsWithIO(id)
+	endTime := time.Now()
+	fmt.Printf("Copying rootfs took: %s\n", endTime.Sub(startTime))
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("Failed to copy rootfs: %v", err))
 	}
 	return models.Drive{
 		DriveID:      firecracker.String("1"),
@@ -77,6 +83,44 @@ func CopyBaseRootfs(id string) (string, error) {
 		return "", err
 	}
 	return destinationPath, nil
+}
+
+func CopyBaseRootfsWithIO(id string) (string, error) {
+	// copy rootfs.ext4 to /tmp/<id>-rootfs.ext4
+	root_drive_path := "/home/bohdan/workspace/uni/thesis/worker/firecracker/rootfs.ext4"
+	tmpDir := os.TempDir()
+	sourceFileName := filepath.Base(root_drive_path)
+	destinationPath := filepath.Join(tmpDir, id+"-"+sourceFileName)
+	err := copyFileWithIO(root_drive_path, destinationPath)
+	if err != nil {
+		return "", err
+	}
+	return destinationPath, nil
+}
+
+func copyFileWithIO(src, dst string) error {
+	sourceFileStat, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	if !sourceFileStat.Mode().IsRegular() {
+		return fmt.Errorf("%s is not a regular file", src)
+	}
+
+	source, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destination.Close()
+	_, err = io.Copy(destination, source)
+	return err
 }
 
 func getVMConfig(vmID string, cpuCount int64, memSizeMib int64, useDefaultDrive bool) firecracker.Config {
