@@ -35,7 +35,7 @@ func getStaticNetworkInterfaces() []firecracker.NetworkInterface {
 	}
 }
 
-func getUniqueDrive(id string) models.Drive {
+func GetUniqueDrive(id string) models.Drive {
 	startTime := time.Now()
 	path, err := CopyBaseRootfsWithIO(id)
 	endTime := time.Now()
@@ -56,7 +56,7 @@ func getDefaultDrive() models.Drive {
 		DriveID:      firecracker.String("1"),
 		PathOnHost:   firecracker.String("/home/bohdan/workspace/uni/thesis/worker/firecracker/rootfs.ext4"),
 		IsRootDevice: firecracker.Bool(true),
-		IsReadOnly:   firecracker.Bool(false),
+		IsReadOnly:   firecracker.Bool(true),
 	}
 }
 
@@ -132,7 +132,7 @@ func getVMConfig(vmID string, cpuCount int64, memSizeMib int64, useDefaultDrive 
 	if useDefaultDrive {
 		drive = getDefaultDrive()
 	} else {
-		drive = getUniqueDrive(vmID)
+		drive = GetUniqueDrive(vmID)
 	}
 	return firecracker.Config{
 		SocketPath:        socket_path,
@@ -161,4 +161,14 @@ func CheckVMHealth(vm *types.FirecrackerVM) bool {
 		return false
 	}
 	return true
+}
+
+func WaitUntilAvailable(vm *types.FirecrackerVM) {
+	for {
+		fmt.Println("Waiting for VM to be available...")
+		if CheckVMHealth(vm) {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }

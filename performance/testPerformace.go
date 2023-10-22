@@ -3,6 +3,7 @@ package performance
 import (
 	"app/api"
 	"app/docrunner"
+	"app/firerunner"
 	"app/types"
 	"app/v8runner"
 	"bytes"
@@ -11,6 +12,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/rs/xid"
 )
 
 var jsonSubmission = `
@@ -149,4 +152,12 @@ func killContainerAndGetLogs(dockerContainer *types.DockerContainer) {
 		panic(err)
 	}
 	fmt.Println("logs: ", logs)
+}
+
+func TestCopying() {
+	for i := 0; i < 15; i++ {
+		id := xid.New().String()
+		go firerunner.GetUniqueDrive(id)
+	}
+	time.Sleep(60 * time.Second)
 }
