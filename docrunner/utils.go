@@ -3,6 +3,7 @@ package docrunner
 import (
 	"app/types"
 	"net/http"
+	"time"
 )
 
 func CheckContainerHealth(conatiner *types.DockerContainer) bool {
@@ -16,4 +17,13 @@ func CheckContainerHealth(conatiner *types.DockerContainer) bool {
 		return false
 	}
 	return true
+}
+
+func WaitUntilAvailable(container *types.DockerContainer) {
+	for {
+		if CheckContainerHealth(container) {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }

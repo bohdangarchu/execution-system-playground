@@ -12,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/rs/xid"
 )
@@ -116,7 +115,7 @@ func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("failed to start docker container: %v", err), http.StatusInternalServerError)
 			return
 		}
-		time.Sleep(50 * time.Millisecond)
+		docrunner.WaitUntilAvailable(container)
 		result, err := docrunner.SendJSONSubmissionToDocker(container.Port, jsonSubmission)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)

@@ -165,7 +165,6 @@ func CheckVMHealth(vm *types.FirecrackerVM) bool {
 
 func WaitUntilAvailable(vm *types.FirecrackerVM) {
 	for {
-		fmt.Println("Waiting for VM to be available...")
 		if CheckVMHealth(vm) {
 			break
 		}
