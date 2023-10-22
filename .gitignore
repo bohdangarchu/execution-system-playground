@@ -7,3 +7,5 @@ cgroup.procs
 main
 
 config.json
+
+__pycache__
