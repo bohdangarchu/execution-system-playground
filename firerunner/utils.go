@@ -12,6 +12,7 @@ import (
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
 	models "github.com/firecracker-microvm/firecracker-go-sdk/client/models"
+	"github.com/rs/xid"
 )
 
 func getCNINetworkInterfaces() []firecracker.NetworkInterface {
@@ -43,6 +44,15 @@ func getUniqueDrive(id string) models.Drive {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to copy rootfs: %v", err))
 	}
+	return models.Drive{
+		DriveID:      firecracker.String("1"),
+		PathOnHost:   &path,
+		IsRootDevice: firecracker.Bool(true),
+		IsReadOnly:   firecracker.Bool(false),
+	}
+}
+
+func GetDriveFromPath(path string) models.Drive {
 	return models.Drive{
 		DriveID:      firecracker.String("1"),
 		PathOnHost:   &path,
@@ -148,6 +158,22 @@ func getVMConfig(vmID string, cpuCount int64, memSizeMib int64, useDefaultDrive 
 	}
 }
 
+func getVMConfigWithDrive(vmID string, cpuCount int64, memSizeMib int64, drive models.Drive) firecracker.Config {
+	socket_path := GetSocketPath(vmID)
+	return firecracker.Config{
+		SocketPath:        socket_path,
+		KernelImagePath:   KERNEL_IMAGE_PATH,
+		KernelArgs:        "console=ttyS0 noapic reboot=k panic=1 pci=off nomodules rw",
+		Drives:            []models.Drive{drive},
+		NetworkInterfaces: getCNINetworkInterfaces(),
+		MachineCfg: models.MachineConfiguration{
+			VcpuCount:   &cpuCount,
+			CPUTemplate: models.CPUTemplate("C3"),
+			MemSizeMib:  &memSizeMib,
+		},
+	}
+}
+
 func CheckVMHealth(vm *types.FirecrackerVM) bool {
 	url := "http://" + vm.Ip.String() + ":8080/health"
 	resp, err := http.Get(url)
@@ -161,4 +187,13 @@ func CheckVMHealth(vm *types.FirecrackerVM) bool {
 		return false
 	}
 	return true
+}
+
+func KeepDrivePoolFull(fileSystemPool chan string) {
+	for {
+		id := xid.New().String()
+		drive := getUniqueDrive(id)
+		fmt.Printf("Created a new drive: %s\n", *drive.PathOnHost)
+		fileSystemPool <- *drive.PathOnHost
+	}
 }

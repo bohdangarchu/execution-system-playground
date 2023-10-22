@@ -21,7 +21,9 @@ func Run(config *types.Config) {
 		if config.Isolation == "docker" {
 			http.HandleFunc("/execute", getDockerHandlerWithNewContainer(config))
 		} else if config.Isolation == "firecracker" {
-			http.HandleFunc("/execute", getFirecrackerHandlerWithNewVM(config))
+			drivePool := make(chan string, 1)
+			go firerunner.KeepDrivePoolFull(drivePool)
+			http.HandleFunc("/execute", getFirecrackerHandlerWithNewVM(config, drivePool))
 		} else {
 			http.HandleFunc("/execute", getWorkerHandlerWithNewWorker(config))
 		}

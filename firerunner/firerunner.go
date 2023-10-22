@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
+	"github.com/firecracker-microvm/firecracker-go-sdk/client/models"
 	"github.com/rs/xid"
 	log "github.com/sirupsen/logrus"
 )
@@ -138,6 +139,50 @@ func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig) (*types.Fire
 		if !useDefaultDrive {
 			os.Remove(*vm.Cfg.Drives[0].PathOnHost)
 		}
+		vmmCancel()
+		return nil
+	}
+	return &types.FirecrackerVM{
+		VmmCtx:           vmmCtx,
+		VmmID:            vmID,
+		Machine:          vm,
+		Ip:               vm.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP,
+		StopVMandCleanUp: stopVMandCleanUp,
+	}, nil
+}
+
+func StartVMWithDrive(config *types.FirecrackerConfig, drive models.Drive) (*types.FirecrackerVM, error) {
+	fmt.Printf("Starting VM with drive: %s\n", *drive.PathOnHost)
+	logger := log.New()
+	vmID := xid.New().String()
+	fcCfg := getVMConfigWithDrive(vmID, int64(config.CPUCount), int64(config.MemSizeMib), drive)
+	machineOpts := []firecracker.Opt{
+		firecracker.WithLogger(log.NewEntry(logger)),
+	}
+	ctx := context.Background()
+	vmmCtx, vmmCancel := context.WithCancel(ctx)
+	cmd := firecracker.VMCommandBuilder{}.
+		WithBin(FIRECRACKER_BIN_PATH).
+		WithSocketPath(fcCfg.SocketPath).
+		WithStdin(os.Stdin).
+		WithStdout(os.Stdout).
+		WithStderr(os.Stderr).
+		Build(ctx)
+	machineOpts = append(machineOpts, firecracker.WithProcessRunner(cmd))
+	vm, err := firecracker.NewMachine(vmmCtx, fcCfg, machineOpts...)
+
+	if err != nil {
+		log.Fatalf("Failed creating machine: %s", err)
+	}
+	if err := vm.Start(vmmCtx); err != nil {
+		log.Fatalf("Failed to start machine: %v", err)
+	}
+
+	stopVMandCleanUp := func() error {
+		fmt.Println("stoppping VM " + vmID)
+		vm.StopVMM()
+		RemoveSocket(vmID)
+		os.Remove(*drive.PathOnHost)
 		vmmCancel()
 		return nil
 	}

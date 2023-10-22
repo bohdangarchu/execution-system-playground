@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/rs/xid"
@@ -129,14 +128,18 @@ func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 	}
 }
 
-func getFirecrackerHandlerWithNewVM(config *types.Config) http.HandlerFunc {
+func getFirecrackerHandlerWithNewVM(config *types.Config, drivePool chan string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// starts a new VM for each request
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(r.Body)
 		jsonSubmission := buf.String()
 
-		vm, err := firerunner.StartVM(false, config.Firecracker)
+		// get a drive from the pool
+		drivePath := <-drivePool
+		drive := firerunner.GetDriveFromPath(drivePath)
+		vm, err := firerunner.StartVMWithDrive(config.Firecracker, drive)
+		defer vm.StopVMandCleanUp()
 		if err != nil {
 			log.Fatalf("Failed to start VM: %v", err)
 		}
@@ -146,7 +149,6 @@ func getFirecrackerHandlerWithNewVM(config *types.Config) http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)
 			return
 		}
-		vm.StopVMandCleanUp()
 		responseJSON := []byte(result)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -165,15 +167,12 @@ func getWorkerHandlerWithNewWorker(config *types.Config) http.HandlerFunc {
 			config.ProcessIsolation.CgroupMaxMem,
 			config.ProcessIsolation.CgroupMaxCPU,
 		)
+		defer workerrunner.KillWorker(worker)
 		fmt.Printf("Worker %s running job: %s", worker.Id, jsonSubmission)
 		result, err := workerrunner.SendJsonToUnixSocket(worker.SocketPath, jsonSubmission)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to execute submission: %v", err), http.StatusInternalServerError)
 			return
-		}
-		worker.Cmd.Process.Signal(os.Interrupt)
-		if _, err := os.Stat(worker.SocketPath); err == nil {
-			os.Remove(worker.SocketPath)
 		}
 		responseJSON := []byte(result)
 		w.Header().Set("Content-Type", "application/json")
