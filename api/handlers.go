@@ -4,7 +4,6 @@ import (
 	"app/docrunner"
 	"app/firerunner"
 	"app/types"
-	"app/v8runner"
 	"app/workerrunner"
 	"bytes"
 	"encoding/json"
@@ -12,8 +11,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/rs/xid"
 )
 
 func getFirecrackerHandler(vmPool chan types.FirecrackerVM) http.HandlerFunc {
@@ -24,22 +21,15 @@ func getFirecrackerHandler(vmPool chan types.FirecrackerVM) http.HandlerFunc {
 		jsonSubmission := buf.String()
 		// get a VM from the pool
 		vm := <-vmPool
-		job := types.Job{
-			Submission: jsonSubmission,
-			JobId:      xid.New().String(),
-		}
-		result := types.JobResult{
-			JobId: job.JobId,
-		}
-		fmt.Printf("VM %s Running job: %s", vm.VmmID, job.Submission)
-		result.Result, result.Err = firerunner.RunSubmissionInsideVM(&vm, job.Submission)
+		fmt.Printf("VM %s Running job: %s", vm.VmmID, jsonSubmission)
+		result, err := firerunner.RunSubmissionInsideVM(&vm, jsonSubmission)
 		// push the VM back to the pool
 		vmPool <- vm
-		if result.Err != nil {
-			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", result.Err.Error()), http.StatusBadRequest)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err.Error()), http.StatusBadRequest)
 			return
 		}
-		responseJSON := []byte(result.Result)
+		responseJSON := []byte(result)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(responseJSON)
@@ -183,36 +173,6 @@ func getWorkerHandlerWithNewWorker(config *types.Config) http.HandlerFunc {
 	}
 }
 
-func getV8Handler(isolatePool chan types.V8Isolate) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var functionSubmission types.FunctionSubmission
-		err := json.NewDecoder(r.Body).Decode(&functionSubmission)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to parse request body: %v", err), http.StatusBadRequest)
-			log.Println(fmt.Sprintf("failed to parse request body: %v", err))
-			return
-		}
-		iso := <-isolatePool
-		// Execute the JavaScript code
-		outputArray, err := v8runner.RunSubmissionOnIsolate(iso.Isolate, functionSubmission)
-		// push the isolate back to the pool
-		isolatePool <- iso
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to execute submission: %v", err), http.StatusInternalServerError)
-			return
-		}
-		// Convert the result to JSON
-		responseJSON, err := json.Marshal(outputArray)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to convert result to JSON: %v", err), http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(responseJSON)
-	}
-}
-
 func handleRequestWithDocker(w http.ResponseWriter, r *http.Request) {
 	var functionSubmission types.FunctionSubmission
 	err := json.NewDecoder(r.Body).Decode(&functionSubmission)
@@ -246,30 +206,5 @@ func handleRequestWithFirecracker(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(responseJSON)
-}
-
-func handleRequestWithV8(w http.ResponseWriter, r *http.Request) {
-	var functionSubmission types.FunctionSubmission
-	err := json.NewDecoder(r.Body).Decode(&functionSubmission)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to parse request body: %v", err), http.StatusBadRequest)
-		log.Println(fmt.Sprintf("failed to parse request body: %v", err))
-		return
-	}
-	// Execute the JavaScript code
-	outputArray, err := v8runner.RunSubmission(functionSubmission)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to execute submission: %v", err), http.StatusInternalServerError)
-		return
-	}
-	// Convert the result to JSON
-	responseJSON, err := json.Marshal(outputArray)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to convert result to JSON: %v", err), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(responseJSON)
+	w.Write(responseJSON)
 }

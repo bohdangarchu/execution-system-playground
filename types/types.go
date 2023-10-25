@@ -8,15 +8,8 @@ import (
 	"github.com/docker/docker/client"
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
-	v8 "rogchap.com/v8go"
 )
 
-type InputOutput struct {
-	Input          []string
-	ExpectedOutput string
-}
-
-// use the types below for the rest api interface
 type FunctionSubmission struct {
 	FunctionName string     `json:"functionName"`
 	Language     string     `json:"language"`
@@ -30,13 +23,8 @@ type TestCase struct {
 }
 
 type TestResult struct {
-	TestCase     TestCase        `json:"testCase"`
-	ActualOutput ExecutionOutput `json:"actualOutput"`
-}
-
-type Argument struct {
-	Value interface{} `json:"value"`
-	Type  string      `json:"type"`
+	TestCase TestCase        `json:"testCase"`
+	Result   ExecutionOutput `json:"result"`
 }
 
 type ExecutionOutput struct {
@@ -45,15 +33,9 @@ type ExecutionOutput struct {
 	Logs   string `json:"logs"`
 }
 
-type Job struct {
-	Submission string
-	JobId      string
-}
-
-type JobResult struct {
-	JobId  string
-	Result string
-	Err    error
+type Response struct {
+	Results []TestResult `json:"results"`
+	Error   string       `json:"error"`
 }
 
 type FirecrackerVM struct {
@@ -69,10 +51,6 @@ type DockerContainer struct {
 	Port        string
 	Cli         *client.Client
 	Ctx         context.Context
-}
-
-type V8Isolate struct {
-	Isolate *v8.Isolate
 }
 
 type V8Worker struct {

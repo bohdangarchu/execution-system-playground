@@ -5,9 +5,7 @@ import (
 	"app/docrunner"
 	"app/firerunner"
 	"app/types"
-	"app/v8runner"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -119,24 +117,6 @@ func SendSubmissionToUrl(jsonSubmission string, url string) (string, error) {
 	}
 
 	return string(responseBody), nil
-}
-
-func executeJSONSubmissionUsingV8(jsonSubmission string) (string, error) {
-	var functionSubmission types.FunctionSubmission
-	err := json.Unmarshal([]byte(jsonSubmission), &functionSubmission)
-	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal json: %v", err)
-	}
-
-	// Execute the JavaScript code
-	outputArray, _ := v8runner.RunSubmission(functionSubmission)
-
-	// Convert the result to JSON
-	responseJSON, err := json.Marshal(outputArray)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal response: %v", err)
-	}
-	return string(responseJSON), nil
 }
 
 func killContainerAndGetLogs(dockerContainer *types.DockerContainer) {
