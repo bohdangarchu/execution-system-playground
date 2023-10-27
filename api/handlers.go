@@ -66,7 +66,7 @@ func getWorkerHandler(workerPool chan types.V8Worker, config *types.ProcessIsola
 		worker := <-workerPool
 		fmt.Printf("Worker %s running job: %s", worker.Id, jsonSubmission)
 		result, err := workerrunner.SendJsonToUnixSocket(worker.SocketPath, jsonSubmission)
-		if workerrunner.IsWorkerRunning(&worker) {
+		if workerrunner.CheckWorkerHealth(&worker) {
 			workerPool <- worker
 		} else {
 			println("worker ", worker.Pid, " is not running, starting a new one")
@@ -100,7 +100,7 @@ func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 			int64(config.Docker.MaxMemSize),
 			int64(config.Docker.NanoCPUs),
 		)
-		defer docrunner.KillContainerAndGetLogs(container)
+		defer docrunner.KillContainerAndGetLogs(container, false)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to start docker container: %v", err), http.StatusInternalServerError)
 			return
@@ -156,6 +156,7 @@ func getWorkerHandlerWithNewWorker(config *types.Config) http.HandlerFunc {
 			config.ProcessIsolation.CgroupMaxMem,
 			config.ProcessIsolation.CgroupMaxCPU,
 		)
+		workerrunner.WaitUntilAvailable(worker)
 		fmt.Printf("Worker %s running job: %s", worker.Id, jsonSubmission)
 		result, err := workerrunner.SendJsonToUnixSocket(worker.SocketPath, jsonSubmission)
 		if err != nil {

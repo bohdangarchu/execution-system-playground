@@ -22,7 +22,7 @@ func StartContainerAndRunSubmission(jsonSubmission string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer KillContainerAndGetLogs(dockerContainer)
+	defer KillContainerAndGetLogs(dockerContainer, true)
 	// sometimes the docker container is not ready to receive requests
 	time.Sleep(50 * time.Millisecond)
 
@@ -62,20 +62,22 @@ func SendJSONSubmissionToDocker(port string, jsonSubmission string) (string, err
 	return string(responseBody), nil
 }
 
-func KillContainerAndGetLogs(dockerContainer *types.DockerContainer) {
+func KillContainerAndGetLogs(dockerContainer *types.DockerContainer, debug bool) {
 	// kill the container
 	err := KillDockerContainer(dockerContainer)
 	if err != nil {
 		fmt.Println("failed to kill container: ", err)
 	}
-	// Retrieve the logs of the container
-	logs, err := RetrieveLogsFromDockerContainer(dockerContainer)
-	if err != nil {
-		fmt.Println("failed to retrieve logs: ", err)
+	if debug {
+		// Retrieve the logs of the container
+		logs, err := RetrieveLogsFromDockerContainer(dockerContainer)
+		if err != nil {
+			fmt.Println("failed to retrieve logs: ", err)
+		}
+		fmt.Printf("Logs from container with port %s\n", dockerContainer.Port)
+		fmt.Println(logs)
+		fmt.Println("--------------------------------------------------")
 	}
-	fmt.Printf("Logs from container with port %s\n", dockerContainer.Port)
-	fmt.Println(logs)
-	fmt.Println("--------------------------------------------------")
 }
 
 func RetrieveLogsFromDockerContainer(dockerContainer *types.DockerContainer) (string, error) {

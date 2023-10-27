@@ -132,9 +132,9 @@ func KillWorker(worker *types.V8Worker) {
 }
 
 func CheckWorkerHealth(worker *types.V8Worker) bool {
-	if !IsWorkerRunning(worker) {
-		return false
-	}
+	// if !IsWorkerRunning(worker) {
+	// 	return false
+	// }
 	client := &http.Client{
 		Transport: &http.Transport{
 			Dial: func(proto, addr string) (conn net.Conn, err error) {
@@ -159,4 +159,13 @@ func CheckWorkerHealth(worker *types.V8Worker) bool {
 		return false
 	}
 	return true
+}
+
+func WaitUntilAvailable(worker *types.V8Worker) {
+	for {
+		if CheckWorkerHealth(worker) {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }
