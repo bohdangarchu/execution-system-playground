@@ -64,7 +64,7 @@ func runInWorkerPool(config *types.Config) {
 		startTime := time.Now()
 		for i := 0; i < config.Workers; i++ {
 			// use a unique drive for every VM
-			vm, err := firerunner.StartVM(false, config.Firecracker)
+			vm, err := firerunner.StartVM(false, config.Firecracker, false)
 			if err != nil {
 				log.Fatalf("Failed to start VM: %v", err)
 			}

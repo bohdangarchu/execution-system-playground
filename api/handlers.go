@@ -135,13 +135,12 @@ func getFirecrackerHandlerWithNewVM(config *types.Config) http.HandlerFunc {
 		buf.ReadFrom(r.Body)
 		jsonSubmission := buf.String()
 
-		vm, err := firerunner.StartVM(true, config.Firecracker)
+		vm, err := firerunner.StartVM(true, config.Firecracker, false)
 		defer vm.StopVMandCleanUp()
 		firerunner.WaitUntilAvailable(vm)
 		if err != nil {
 			log.Fatalf("Failed to start VM: %v", err)
 		}
-		fmt.Printf("VM %s running job: %s", vm.VmmID, jsonSubmission)
 		result, err := firerunner.RunSubmissionInsideVM(vm, jsonSubmission)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)

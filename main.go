@@ -26,7 +26,7 @@ func runVM() {
 	vm, err := firerunner.StartVM(true, &types.FirecrackerConfig{
 		CPUCount:   1,
 		MemSizeMib: 128,
-	})
+	}, true)
 	defer vm.StopVMandCleanUp()
 	if err != nil {
 		log.Fatalf("Failed to start VM: %v", err)

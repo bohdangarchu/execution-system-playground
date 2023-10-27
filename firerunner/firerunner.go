@@ -105,8 +105,17 @@ func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error)
 	return string(responseBody), nil
 }
 
-func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig) (*types.FirecrackerVM, error) {
-	logger := log.New()
+func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig, debug bool) (*types.FirecrackerVM, error) {
+	debugLevel := log.ErrorLevel
+	if debug {
+		debugLevel = log.InfoLevel
+	}
+	logger := &log.Logger{
+		Out:       os.Stdout,
+		Formatter: new(log.TextFormatter),
+		Hooks:     make(log.LevelHooks),
+		Level:     debugLevel,
+	}
 	vmID := xid.New().String()
 	fcCfg := getVMConfig(vmID, int64(config.CPUCount), int64(config.MemSizeMib), useDefaultDrive)
 	machineOpts := []firecracker.Opt{
@@ -114,13 +123,17 @@ func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig) (*types.Fire
 	}
 	ctx := context.Background()
 	vmmCtx, vmmCancel := context.WithCancel(ctx)
-	cmd := firecracker.VMCommandBuilder{}.
+	builder := firecracker.
+		VMCommandBuilder{}.
 		WithBin(FIRECRACKER_BIN_PATH).
-		WithSocketPath(fcCfg.SocketPath).
-		WithStdin(os.Stdin).
-		WithStdout(os.Stdout).
-		WithStderr(os.Stderr).
-		Build(ctx)
+		WithSocketPath(fcCfg.SocketPath)
+	if debug {
+		builder = builder.
+			WithStdin(os.Stdin).
+			WithStdout(os.Stdout).
+			WithStderr(os.Stderr)
+	}
+	cmd := builder.Build(ctx)
 	machineOpts = append(machineOpts, firecracker.WithProcessRunner(cmd))
 	vm, err := firecracker.NewMachine(vmmCtx, fcCfg, machineOpts...)
 
@@ -132,7 +145,9 @@ func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig) (*types.Fire
 	}
 
 	stopVMandCleanUp := func() error {
-		fmt.Println("stoppping VM " + vmID)
+		if debug {
+			fmt.Printf("Stopping VM: %s\n", vmID)
+		}
 		vm.StopVMM()
 		RemoveSocket(vmID)
 		if !useDefaultDrive {
@@ -155,7 +170,7 @@ func RunStandaloneVM() {
 	vm, err := StartVM(true, &types.FirecrackerConfig{
 		CPUCount:   1,
 		MemSizeMib: 128,
-	})
+	}, true)
 	executionTime := time.Since(startTime)
 	if err != nil {
 		log.Fatalf("Failed to start VM: %v", err)

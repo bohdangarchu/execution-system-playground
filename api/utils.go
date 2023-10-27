@@ -44,7 +44,7 @@ func monitorVMHealth(vmPool chan types.FirecrackerVM, config *types.Config) {
 		} else {
 			fmt.Printf("vm %s is not healthy, killing it\n", vm.VmmID)
 			vm.StopVMandCleanUp()
-			newVM, err := firerunner.StartVM(true, config.Firecracker)
+			newVM, err := firerunner.StartVM(true, config.Firecracker, false)
 			if err != nil {
 				fmt.Printf("failed to start vm: %v\n", err)
 				continue
