@@ -22,7 +22,7 @@ func StartContainerAndRunSubmission(jsonSubmission string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer KillContainerAndGetLogs(dockerContainer, true)
+	defer CleanUp(dockerContainer, true)
 	// sometimes the docker container is not ready to receive requests
 	time.Sleep(50 * time.Millisecond)
 
@@ -62,7 +62,7 @@ func SendJSONSubmissionToDocker(port string, jsonSubmission string) (string, err
 	return string(responseBody), nil
 }
 
-func KillContainerAndGetLogs(dockerContainer *types.DockerContainer, debug bool) {
+func CleanUp(dockerContainer *types.DockerContainer, debug bool) {
 	// kill the container
 	err := KillDockerContainer(dockerContainer)
 	if err != nil {
@@ -146,7 +146,6 @@ func StartExecutionServerInDocker(port string, maxMemory int64, nanoCPUs int64) 
 	}
 	container, _ := cli.ContainerInspect(ctx, resp.ID)
 	realPort := container.NetworkSettings.Ports["8080/tcp"][0].HostPort
-	waitForContainerRunning(cli, resp.ID)
 	return &types.DockerContainer{
 		ContainerId: resp.ID,
 		Port:        realPort,

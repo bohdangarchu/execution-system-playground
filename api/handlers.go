@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 func getFirecrackerHandler(vmPool chan types.FirecrackerVM) http.HandlerFunc {
@@ -89,6 +90,7 @@ func getWorkerHandler(workerPool chan types.V8Worker, config *types.ProcessIsola
 
 func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		startTime := time.Now()
 		// starts a new container for each request
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(r.Body)
@@ -100,12 +102,13 @@ func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 			int64(config.Docker.MaxMemSize),
 			int64(config.Docker.NanoCPUs),
 		)
-		defer docrunner.KillContainerAndGetLogs(container, false)
+		// defer docrunner.CleanUp(container, false)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to start docker container: %v", err), http.StatusInternalServerError)
 			return
 		}
 		docrunner.WaitUntilAvailable(container)
+		workerIsReady := time.Now()
 		result, err := docrunner.SendJSONSubmissionToDocker(container.Port, jsonSubmission)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)
@@ -115,6 +118,13 @@ func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(responseJSON)
+		executed := time.Now()
+		docrunner.CleanUp(container, false)
+		done := time.Now()
+		fmt.Printf(
+			"took %s to start container, %s to run the submission and %s to clean up\n",
+			workerIsReady.Sub(startTime), executed.Sub(workerIsReady), done.Sub(executed),
+		)
 	}
 }
 
@@ -137,7 +147,6 @@ func getFirecrackerHandlerWithNewVM(config *types.Config) http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)
 			return
 		}
-		vm.StopVMandCleanUp()
 		responseJSON := []byte(result)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)

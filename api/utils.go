@@ -18,7 +18,7 @@ func monitorContainerHealth(containerPool chan types.DockerContainer, config *ty
 			containerPool <- container
 		} else {
 			fmt.Printf("container %s is not healthy, killing it\n", container.Port)
-			docrunner.KillContainerAndGetLogs(&container, true)
+			docrunner.CleanUp(&container, true)
 			newContainer, err := docrunner.StartExecutionServerInDocker(
 				container.Port,
 				int64(config.Docker.MaxMemSize),

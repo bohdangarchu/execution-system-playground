@@ -91,7 +91,7 @@ func runInWorkerPool(config *types.Config) {
 		if config.Isolation == "docker" && containerPool != nil {
 			for i := 0; i < config.Workers; i++ {
 				container := <-containerPool
-				docrunner.KillContainerAndGetLogs(&container, true)
+				docrunner.CleanUp(&container, true)
 			}
 		} else if config.Isolation == "firecracker" && vmPool != nil {
 			for i := 0; i < config.Workers; i++ {
