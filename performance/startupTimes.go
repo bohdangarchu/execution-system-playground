@@ -14,7 +14,7 @@ func measureFirecrackerStartupTime() time.Duration {
 		MemSizeMib: 128,
 	}
 	startTime := time.Now()
-	vm, err := firerunner.StartVM(false, config)
+	vm, err := firerunner.StartVM(false, config, false)
 	if err != nil {
 		fmt.Printf("Failed to start VM: %v\n", err)
 	}

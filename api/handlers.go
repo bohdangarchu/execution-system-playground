@@ -131,13 +131,14 @@ func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 func getFirecrackerHandlerWithNewVM(config *types.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// starts a new VM for each request
+		// startTime := time.Now()
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(r.Body)
 		jsonSubmission := buf.String()
 
 		vm, err := firerunner.StartVM(true, config.Firecracker, false)
-		defer vm.StopVMandCleanUp()
 		firerunner.WaitUntilAvailable(vm)
+		// workerIsReady := time.Now()
 		if err != nil {
 			log.Fatalf("Failed to start VM: %v", err)
 		}
@@ -150,6 +151,13 @@ func getFirecrackerHandlerWithNewVM(config *types.Config) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(responseJSON)
+		// executed := time.Now()
+		vm.StopVMandCleanUp()
+		// done := time.Now()
+		// fmt.Printf(
+		// 	"took %s to start VM, %s to run the submission and %s to clean up\n",
+		// 	workerIsReady.Sub(startTime), executed.Sub(workerIsReady), done.Sub(executed),
+		// )
 	}
 }
 

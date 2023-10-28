@@ -24,6 +24,6 @@ func WaitUntilAvailable(container *types.DockerContainer) {
 		if CheckContainerHealth(container) {
 			break
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 }

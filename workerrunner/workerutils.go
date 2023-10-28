@@ -166,6 +166,6 @@ func WaitUntilAvailable(worker *types.V8Worker) {
 		if CheckWorkerHealth(worker) {
 			break
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 }

@@ -168,6 +168,6 @@ func WaitUntilAvailable(vm *types.FirecrackerVM) {
 		if CheckVMHealth(vm) {
 			break
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 }
