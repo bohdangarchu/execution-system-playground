@@ -22,7 +22,6 @@ func getFirecrackerHandler(vmPool chan types.FirecrackerVM) http.HandlerFunc {
 		jsonSubmission := buf.String()
 		// get a VM from the pool
 		vm := <-vmPool
-		fmt.Printf("VM %s Running job: %s", vm.VmmID, jsonSubmission)
 		result, err := firerunner.RunSubmissionInsideVM(&vm, jsonSubmission)
 		// push the VM back to the pool
 		vmPool <- vm
@@ -65,7 +64,6 @@ func getWorkerHandler(workerPool chan types.V8Worker, config *types.ProcessIsola
 		jsonSubmission := buf.String()
 
 		worker := <-workerPool
-		fmt.Printf("Worker %s running job: %s", worker.Id, jsonSubmission)
 		result, err := workerrunner.SendJsonToUnixSocket(worker.SocketPath, jsonSubmission)
 		if workerrunner.CheckWorkerHealth(&worker) {
 			workerPool <- worker
@@ -173,7 +171,6 @@ func getWorkerHandlerWithNewWorker(config *types.Config) http.HandlerFunc {
 			config.ProcessIsolation.CgroupMaxCPU,
 		)
 		workerrunner.WaitUntilAvailable(worker)
-		fmt.Printf("Worker %s running job: %s", worker.Id, jsonSubmission)
 		result, err := workerrunner.SendJsonToUnixSocket(worker.SocketPath, jsonSubmission)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to execute submission: %v", err), http.StatusInternalServerError)

@@ -91,13 +91,7 @@ func RetrieveLogsFromDockerContainer(dockerContainer *types.DockerContainer) (st
 }
 
 func KillDockerContainer(dockerContainer *types.DockerContainer) error {
-	// to not wait for the container to exit gracefully
-	noWaitTimeout := 0
-	return dockerContainer.Cli.ContainerStop(
-		dockerContainer.Ctx,
-		dockerContainer.ContainerId,
-		container.StopOptions{Timeout: &noWaitTimeout},
-	)
+	return dockerContainer.Cli.ContainerKill(dockerContainer.Ctx, dockerContainer.ContainerId, "SIGKILL")
 }
 
 func StartExecutionServerInDocker(port string, maxMemory int64, nanoCPUs int64) (*types.DockerContainer, error) {

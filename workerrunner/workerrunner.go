@@ -28,7 +28,6 @@ func StartProcessWorker(maxMem int, maxCpu int) *types.V8Worker {
 	// otherwise it will become a zombie process
 	go func() {
 		cmd.Wait()
-		fmt.Println(fmt.Sprintf("worker %s finished", id))
 		if _, err := os.Stat(socketPath); err == nil {
 			os.Remove(socketPath)
 		}

@@ -51,6 +51,7 @@ func runInWorkerPool(config *types.Config) {
 				int64(config.Docker.MaxMemSize),
 				int64(config.Docker.NanoCPUs),
 			)
+			docrunner.WaitUntilAvailable(container)
 			if err != nil {
 				log.Fatalf("Failed to start docker container: %v", err)
 			}
@@ -65,6 +66,7 @@ func runInWorkerPool(config *types.Config) {
 		for i := 0; i < config.Workers; i++ {
 			// use a unique drive for every VM
 			vm, err := firerunner.StartVM(false, config.Firecracker, false)
+			firerunner.WaitUntilAvailable(vm)
 			if err != nil {
 				log.Fatalf("Failed to start VM: %v", err)
 			}
@@ -81,6 +83,7 @@ func runInWorkerPool(config *types.Config) {
 				config.ProcessIsolation.CgroupMaxMem,
 				config.ProcessIsolation.CgroupMaxCPU,
 			)
+			workerrunner.WaitUntilAvailable(worker)
 			workerPool <- *worker
 		}
 		go monitorV8Worker(workerPool, config.ProcessIsolation)

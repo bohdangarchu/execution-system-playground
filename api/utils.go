@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const INTERVAL = 1 * time.Second
+
 func monitorContainerHealth(containerPool chan types.DockerContainer, config *types.Config) {
 	for {
 		container := <-containerPool
@@ -30,7 +32,7 @@ func monitorContainerHealth(containerPool chan types.DockerContainer, config *ty
 			}
 			containerPool <- *newContainer
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(INTERVAL)
 	}
 }
 
@@ -51,7 +53,7 @@ func monitorVMHealth(vmPool chan types.FirecrackerVM, config *types.Config) {
 			}
 			vmPool <- *newVM
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(INTERVAL)
 	}
 }
 
@@ -71,6 +73,6 @@ func monitorV8Worker(workerPool chan types.V8Worker, config *types.ProcessIsolat
 			)
 			workerPool <- *newWorker
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(INTERVAL)
 	}
 }

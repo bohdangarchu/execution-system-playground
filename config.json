@@ -1,5 +1,5 @@
 {
-    "isolation": "firecracker",
+    "isolation": "docker",
     "workers": 0,
     "firecracker": {
         "cpuCount": 1,
