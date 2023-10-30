@@ -44,19 +44,18 @@ func runInWorkerPool(config *types.Config) {
 	var workerPool chan types.V8Worker
 	if config.Isolation == "docker" {
 		containerPool = make(chan types.DockerContainer, config.Workers)
-		port := 8081
 		for i := 0; i < config.Workers; i++ {
 			container, err := docrunner.StartExecutionServerInDocker(
-				fmt.Sprintf("%d", port),
+				// with 0 docker will pick an available port
+				"0",
 				int64(config.Docker.MaxMemSize),
 				int64(config.Docker.NanoCPUs),
 			)
-			docrunner.WaitUntilAvailable(container)
 			if err != nil {
-				log.Fatalf("Failed to start docker container: %v", err)
+				panic(err)
 			}
+			docrunner.WaitUntilAvailable(container)
 			containerPool <- *container
-			port++
 		}
 		go monitorContainerHealth(containerPool, config)
 		http.HandleFunc("/execute", getDockerHandler(containerPool))
@@ -94,7 +93,7 @@ func runInWorkerPool(config *types.Config) {
 		if config.Isolation == "docker" && containerPool != nil {
 			for i := 0; i < config.Workers; i++ {
 				container := <-containerPool
-				docrunner.CleanUp(&container, true)
+				docrunner.CleanUp(&container, false)
 			}
 		} else if config.Isolation == "firecracker" && vmPool != nil {
 			for i := 0; i < config.Workers; i++ {
