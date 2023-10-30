@@ -7,5 +7,6 @@ cgroup.procs
 main
 
 config.json
+log.txt
 
 __pycache__
