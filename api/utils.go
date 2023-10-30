@@ -14,7 +14,6 @@ const INTERVAL = 1 * time.Second
 func monitorContainerHealth(containerPool chan types.DockerContainer, config *types.Config) {
 	for {
 		container := <-containerPool
-		fmt.Printf("health check, container %s\n", container.Port)
 		healthy := docrunner.CheckContainerHealth(&container)
 		if healthy {
 			containerPool <- container
@@ -39,7 +38,6 @@ func monitorContainerHealth(containerPool chan types.DockerContainer, config *ty
 func monitorVMHealth(vmPool chan types.FirecrackerVM, config *types.Config) {
 	for {
 		vm := <-vmPool
-		fmt.Printf("health check, vm %s\n", vm.Ip.String())
 		healthy := firerunner.CheckVMHealth(&vm)
 		if healthy {
 			vmPool <- vm
@@ -60,7 +58,6 @@ func monitorVMHealth(vmPool chan types.FirecrackerVM, config *types.Config) {
 func monitorV8Worker(workerPool chan types.V8Worker, config *types.ProcessIsolationConfig) {
 	for {
 		worker := <-workerPool
-		fmt.Printf("health check, worker %s\n", worker.Id)
 		healthy := workerrunner.CheckWorkerHealth(&worker)
 		if healthy {
 			workerPool <- worker

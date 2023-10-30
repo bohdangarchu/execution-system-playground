@@ -35,7 +35,6 @@ func StartContainerAndRunSubmission(jsonSubmission string) (string, error) {
 
 func SendJSONSubmissionToDocker(port string, jsonSubmission string) (string, error) {
 	url := "http://localhost:" + port + "/execute"
-	fmt.Printf("Sending request to %s\n", url)
 
 	// Create a request body as a bytes.Buffer
 	requestBody := bytes.NewBuffer([]byte(jsonSubmission))

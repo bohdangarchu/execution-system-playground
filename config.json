@@ -1,6 +1,6 @@
 {
-    "isolation": "process",
-    "workers": 1,
+    "isolation": "firecracker",
+    "workers": 5,
     "firecracker": {
         "cpuCount": 1,
         "memSizeMib": 128
