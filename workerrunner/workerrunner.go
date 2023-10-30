@@ -15,14 +15,14 @@ func StartProcessWorker(maxMem int, maxCpu int) *types.V8Worker {
 	socketPath := fmt.Sprintf("/tmp/worker-%s.sock", id)
 	println("socket path: ", socketPath)
 	// start the worker with the socket path
-	workerPath := "../worker/main"
+	workerPath := "/home/bohdan/workspace/uni/thesis/worker/main"
 	cmd := exec.Command(workerPath, "--socket-path", socketPath)
 	// print stdout
 	cmd.Stdout = os.Stdout
 
 	execErr := cmd.Start()
 	if execErr != nil {
-		println("error starting the worker: ", execErr.Error())
+		fmt.Println("error starting the worker: ", execErr.Error())
 	}
 	// need to wait for the process to finish
 	// otherwise it will become a zombie process
@@ -33,7 +33,7 @@ func StartProcessWorker(maxMem int, maxCpu int) *types.V8Worker {
 		}
 	}()
 	pid := cmd.Process.Pid
-	println("pid of the worker: ", pid)
+	fmt.Println("pid of the worker: ", pid)
 	manager := getCgroup(int64(maxMem), uint64(maxCpu))
 	// add the pid to the cgroup
 	err := manager.AddProc(uint64(pid))

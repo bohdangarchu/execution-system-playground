@@ -43,7 +43,6 @@ func getDockerHandler(containerPool chan types.DockerContainer) http.HandlerFunc
 		jsonSubmission := buf.String()
 
 		container := <-containerPool
-		fmt.Printf("Container %s running job: %s", container.ContainerId, jsonSubmission)
 		result, err := docrunner.SendJSONSubmissionToDocker(container.Port, jsonSubmission)
 		containerPool <- container
 		if err != nil {
@@ -68,7 +67,7 @@ func getWorkerHandler(workerPool chan types.V8Worker, config *types.ProcessIsola
 		if workerrunner.CheckWorkerHealth(&worker) {
 			workerPool <- worker
 		} else {
-			println("worker ", worker.Pid, " is not running, starting a new one")
+			fmt.Println("worker ", worker.Pid, " is not running, starting a new one")
 			newWorker := workerrunner.StartProcessWorker(
 				config.CgroupMaxMem,
 				config.CgroupMaxCPU,
