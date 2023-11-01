@@ -9,16 +9,18 @@ import (
 	"github.com/rs/xid"
 )
 
+const WORKER_PATH = "/home/bohdan/workspace/uni/thesis/worker/main"
+
 func StartProcessWorker(maxMem int, maxCpu int) *types.V8Worker {
 	// generate random id
 	id := xid.New().String()
 	socketPath := fmt.Sprintf("/tmp/worker-%s.sock", id)
 	println("socket path: ", socketPath)
 	// start the worker with the socket path
-	workerPath := "/home/bohdan/workspace/uni/thesis/worker/main"
-	cmd := exec.Command(workerPath, "--socket-path", socketPath)
+	cmd := exec.Command(WORKER_PATH, "--socket-path", socketPath)
 	// print stdout
 	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	execErr := cmd.Start()
 	if execErr != nil {
@@ -43,7 +45,7 @@ func StartProcessWorker(maxMem int, maxCpu int) *types.V8Worker {
 	return &types.V8Worker{
 		Id:             id,
 		SocketPath:     socketPath,
-		ExecutablePath: workerPath,
+		ExecutablePath: WORKER_PATH,
 		Pid:            pid,
 		Cmd:            cmd,
 	}

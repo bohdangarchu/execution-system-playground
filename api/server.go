@@ -64,7 +64,7 @@ func runInWorkerPool(config *types.Config) {
 		startTime := time.Now()
 		for i := 0; i < config.Workers; i++ {
 			// use a unique drive for every VM
-			vm, err := firerunner.StartVM(false, config.Firecracker, false)
+			vm, err := firerunner.StartVM(true, config.Firecracker, false)
 			firerunner.WaitUntilAvailable(vm)
 			if err != nil {
 				log.Fatalf("Failed to start VM: %v", err)
@@ -73,7 +73,7 @@ func runInWorkerPool(config *types.Config) {
 		}
 		elapsed := time.Since(startTime)
 		fmt.Printf("VM pool initialized in %s\n", elapsed)
-		go monitorVMHealth(vmPool, config)
+		go monitorVMHealth(vmPool, config, true, false)
 		http.HandleFunc("/execute", getFirecrackerHandler(vmPool))
 	} else {
 		workerPool = make(chan types.V8Worker, config.Workers)

@@ -35,7 +35,7 @@ func monitorContainerHealth(containerPool chan types.DockerContainer, config *ty
 	}
 }
 
-func monitorVMHealth(vmPool chan types.FirecrackerVM, config *types.Config) {
+func monitorVMHealth(vmPool chan types.FirecrackerVM, config *types.Config, useDefaultDrive bool, debug bool) {
 	for {
 		vm := <-vmPool
 		healthy := firerunner.CheckVMHealth(&vm)
@@ -44,7 +44,7 @@ func monitorVMHealth(vmPool chan types.FirecrackerVM, config *types.Config) {
 		} else {
 			fmt.Printf("vm %s is not healthy, killing it\n", vm.VmmID)
 			vm.StopVMandCleanUp()
-			newVM, err := firerunner.StartVM(true, config.Firecracker, false)
+			newVM, err := firerunner.StartVM(useDefaultDrive, config.Firecracker, debug)
 			if err != nil {
 				fmt.Printf("failed to start vm: %v\n", err)
 				continue
