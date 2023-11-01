@@ -9,4 +9,7 @@ main
 config.json
 log.txt
 
+hello-vmlinux.bin
+rootfs.ext4
+
 __pycache__

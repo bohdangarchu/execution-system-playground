@@ -1,5 +1,5 @@
 {
-    "isolation": "process",
+    "isolation": "firecracker",
     "workers": 1,
     "firecracker": {
         "cpuCount": 1,

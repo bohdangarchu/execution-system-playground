@@ -16,7 +16,8 @@ import (
 )
 
 const FIRECRACKER_BIN_PATH = "/home/bohdan/software/firecracker/build/cargo_target/x86_64-unknown-linux-musl/debug/firecracker"
-const KERNEL_IMAGE_PATH = "/home/bohdan/workspace/assets/hello-vmlinux.bin"
+const KERNEL_IMAGE_PATH = "./hello-vmlinux.bin"
+const ROOTFS_PATH = "./rootfs.ext4"
 
 func RunSubmissionInsideVM(vm *types.FirecrackerVM, jsonSubmission string) (string, error) {
 	return executeJSONSubmissionInVM(
@@ -26,6 +27,7 @@ func RunSubmissionInsideVM(vm *types.FirecrackerVM, jsonSubmission string) (stri
 }
 
 func StartVMandRunSubmission(jsonSubmission string) string {
+	// not used
 	startTimeStamp := time.Now()
 	logger := log.New()
 	vmID := xid.New().String()
@@ -108,7 +110,7 @@ func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error)
 func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig, debug bool) (*types.FirecrackerVM, error) {
 	debugLevel := log.ErrorLevel
 	if debug {
-		debugLevel = log.InfoLevel
+		debugLevel = log.DebugLevel
 	}
 	logger := &log.Logger{
 		Out:       os.Stdout,
@@ -118,31 +120,42 @@ func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig, debug bool) 
 	}
 	vmID := xid.New().String()
 	fcCfg := getVMConfig(vmID, int64(config.CPUCount), int64(config.MemSizeMib), useDefaultDrive)
-	machineOpts := []firecracker.Opt{
-		firecracker.WithLogger(log.NewEntry(logger)),
-	}
 	ctx := context.Background()
 	vmmCtx, vmmCancel := context.WithCancel(ctx)
-	builder := firecracker.
-		VMCommandBuilder{}.
-		WithBin(FIRECRACKER_BIN_PATH).
-		WithSocketPath(fcCfg.SocketPath)
-	if debug {
-		builder = builder.
-			WithStdin(os.Stdin).
-			WithStdout(os.Stdout).
-			WithStderr(os.Stderr)
-	}
-	cmd := builder.Build(ctx)
-	machineOpts = append(machineOpts, firecracker.WithProcessRunner(cmd))
-	vm, err := firecracker.NewMachine(vmmCtx, fcCfg, machineOpts...)
-
+	jailer := firecracker.NewJailerCommandBuilder().
+		WithID(vmID).
+		WithUID(1000).
+		WithGID(1000).
+		WithExecFile(FIRECRACKER_BIN_PATH).
+		WithNumaNode(0).
+		WithCgroupVersion("2").
+		WithDaemonize(false).
+		WithStdin(os.Stdin).
+		WithStdout(os.Stdout).
+		WithStderr(os.Stderr).
+		Build(ctx)
+	err := createHardlink(KERNEL_IMAGE_PATH, "/srv/jailer/firecracker/"+vmID+"/root/hello-vmlinux.bin")
 	if err != nil {
-		log.Fatalf("Failed creating machine: %s", err)
+		panic("Failed to create hardlink to kernel image: " + err.Error())
 	}
-	if err := vm.Start(vmmCtx); err != nil {
-		log.Fatalf("Failed to start machine: %v", err)
+	err = createHardlink(ROOTFS_PATH, "/srv/jailer/firecracker/"+vmID+"/root/rootfs.ext4")
+	if err != nil {
+		panic("Failed to create hardlink to rootfs: " + err.Error())
 	}
+	vm, err := firecracker.NewMachine(
+		vmmCtx, fcCfg, firecracker.WithLogger(log.NewEntry(logger)), firecracker.WithProcessRunner(jailer),
+	)
+	if err != nil {
+		panic("Failed creating machine: " + err.Error())
+	}
+
+	err = vm.Start(vmmCtx)
+	if err != nil {
+		panic("Failed to start machine: " + err.Error())
+	}
+
+	pid, _ := vm.PID()
+	fmt.Printf("PID of the VM process: %d\n", pid)
 
 	stopVMandCleanUp := func() error {
 		if debug {

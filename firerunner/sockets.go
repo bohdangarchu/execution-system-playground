@@ -12,6 +12,10 @@ func GetSocketPath(vmID string) string {
 	return filepath.Join(dir, filename)
 }
 
+func GetJailerSocketPath(vmID string) string {
+	return "/srv/jailer/firecracker/" + vmID + "/root/run/firecracker.socket"
+}
+
 func RemoveSocket(vmID string) error {
 	socketPath := GetSocketPath(vmID)
 	return os.Remove(socketPath)
