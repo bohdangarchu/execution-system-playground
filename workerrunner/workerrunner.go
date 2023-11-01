@@ -36,7 +36,7 @@ func StartProcessWorker(maxMem int, maxCpu int) *types.V8Worker {
 	}()
 	pid := cmd.Process.Pid
 	fmt.Println("pid of the worker: ", pid)
-	manager := getCgroup(int64(maxMem), uint64(maxCpu))
+	manager := getCgroup(id, int64(maxMem), uint64(maxCpu))
 	// add the pid to the cgroup
 	err := manager.AddProc(uint64(pid))
 	if err != nil {
