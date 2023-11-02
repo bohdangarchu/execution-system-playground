@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"app/types"
@@ -6,7 +6,40 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/containerd/cgroups/v2/cgroup2"
 )
+
+var allowedImplValues = []string{"docker", "firecracker", "process"}
+
+func CreateCgroup(name string, maxMem, cpuQuota int64, cpuPeriod uint64) *cgroup2.Manager {
+	resources := &cgroup2.Resources{
+		Memory: &cgroup2.Memory{
+			Max: &maxMem,
+		},
+		CPU: &cgroup2.CPU{
+			Max: cgroup2.NewCPUMax(&cpuQuota, &cpuPeriod),
+		},
+	}
+	manager, err := cgroup2.NewSystemd("/", name, -1, resources)
+	if err != nil {
+		println("error creating a cgroup: ", err.Error())
+	}
+	return manager
+}
+
+func CreateCPUCgroup(name string, cpuQuota int64, cpuPeriod uint64) *cgroup2.Manager {
+	resources := &cgroup2.Resources{
+		CPU: &cgroup2.CPU{
+			Max: cgroup2.NewCPUMax(&cpuQuota, &cpuPeriod),
+		},
+	}
+	manager, err := cgroup2.NewSystemd("/", name, -1, resources)
+	if err != nil {
+		println("error creating a cgroup: ", err.Error())
+	}
+	return manager
+}
 
 var defaultConfig = types.Config{
 	Isolation: "docker",
@@ -89,7 +122,7 @@ func contains(s []string, str string) bool {
 	return false
 }
 
-var jsonSubmission = `
+var JsonSubmission = `
 {
 	"functionName": "addTwoNumbers",
 	"code": "function addTwoNumbers(a, b) {\n  return a + b;\n}",

@@ -4,11 +4,10 @@ import (
 	"app/api"
 	"app/firerunner"
 	"app/types"
+	"app/utils"
 	"flag"
 	"log"
 )
-
-var allowedImplValues = []string{"docker", "firecracker", "process"}
 
 func main() {
 	// performance.MeasureStartupTimes()
@@ -18,7 +17,7 @@ func main() {
 func runServer() {
 	pathPtr := flag.String("path", "config.json", "Path to the config")
 	flag.Parse()
-	config := LoadConfig(*pathPtr)
+	config := utils.LoadConfig(*pathPtr)
 	api.Run(&config)
 }
 
@@ -32,7 +31,7 @@ func runVM() {
 	if err != nil {
 		log.Fatalf("Failed to start VM: %v", err)
 	}
-	res, err := firerunner.RunSubmissionInsideVM(vm, jsonSubmission)
+	res, err := firerunner.RunSubmissionInsideVM(vm, utils.JsonSubmission)
 	if err != nil {
 		log.Fatalf("Failed to run submission inside VM: %v", err)
 	}

@@ -2,7 +2,7 @@ package firerunner
 
 import (
 	"app/types"
-	"app/workerrunner"
+	"app/utils"
 	"bytes"
 	"context"
 	"fmt"
@@ -154,7 +154,7 @@ func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig, debug bool) 
 		fmt.Printf("Failed to get PID: %v", err)
 	}
 	fmt.Printf("VM PID: %d\n", pid)
-	manager := workerrunner.CreateCPUCgroup("firecracker-"+vmID+".slice", int64(config.CPUQuota), uint64(config.CPUPeriod))
+	manager := utils.CreateCPUCgroup("firecracker-"+vmID+".slice", int64(config.CPUQuota), uint64(config.CPUPeriod))
 	err = manager.AddProc(uint64(pid))
 	if err != nil {
 		fmt.Println("error adding process to the cgroup: ", err.Error())
