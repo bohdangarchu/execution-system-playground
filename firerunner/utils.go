@@ -123,7 +123,7 @@ func copyFileWithIO(src, dst string) error {
 	return err
 }
 
-func getVMConfig(vmID string, cpuCount int64, memSizeMib int64, useDefaultDrive bool) firecracker.Config {
+func getVMConfig(vmID string, config *types.FirecrackerConfig, useDefaultDrive bool) firecracker.Config {
 	// options for logging:
 	// LogPath:           "/tmp/fc.log",
 	// LogLevel:          "Debug",
@@ -141,9 +141,9 @@ func getVMConfig(vmID string, cpuCount int64, memSizeMib int64, useDefaultDrive 
 		Drives:            []models.Drive{drive},
 		NetworkInterfaces: getCNINetworkInterfaces(),
 		MachineCfg: models.MachineConfiguration{
-			VcpuCount:   &cpuCount,
+			VcpuCount:   firecracker.Int64(1),
 			CPUTemplate: models.CPUTemplate("C3"),
-			MemSizeMib:  &memSizeMib,
+			MemSizeMib:  firecracker.Int64(int64(config.MemSizeMib)),
 		},
 	}
 }

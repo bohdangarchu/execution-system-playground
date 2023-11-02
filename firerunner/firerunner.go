@@ -2,6 +2,7 @@ package firerunner
 
 import (
 	"app/types"
+	"app/workerrunner"
 	"bytes"
 	"context"
 	"fmt"
@@ -29,7 +30,12 @@ func StartVMandRunSubmission(jsonSubmission string) string {
 	startTimeStamp := time.Now()
 	logger := log.New()
 	vmID := xid.New().String()
-	fcCfg := getVMConfig(vmID, 1, 128, false)
+	config := &types.FirecrackerConfig{
+		MemSizeMib: 128,
+		CPUQuota:   200000,
+		CPUPeriod:  1000000,
+	}
+	fcCfg := getVMConfig(vmID, config, false)
 	defer RemoveSocket(vmID)
 	machineOpts := []firecracker.Opt{
 		firecracker.WithLogger(log.NewEntry(logger)),
@@ -117,7 +123,7 @@ func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig, debug bool) 
 		Level:     debugLevel,
 	}
 	vmID := xid.New().String()
-	fcCfg := getVMConfig(vmID, int64(config.CPUCount), int64(config.MemSizeMib), useDefaultDrive)
+	fcCfg := getVMConfig(vmID, config, useDefaultDrive)
 	machineOpts := []firecracker.Opt{
 		firecracker.WithLogger(log.NewEntry(logger)),
 	}
@@ -148,11 +154,11 @@ func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig, debug bool) 
 		fmt.Printf("Failed to get PID: %v", err)
 	}
 	fmt.Printf("VM PID: %d\n", pid)
-	// manager := workerrunner.CreateCgroup("firecracker-"+vmID+".slice", int64(150000000), uint64(config.CPUCount))
-	// err = manager.AddProc(uint64(pid))
-	// if err != nil {
-	// 	fmt.Println("error adding process to the cgroup: ", err.Error())
-	// }
+	manager := workerrunner.CreateCPUCgroup("firecracker-"+vmID+".slice", int64(config.CPUQuota), uint64(config.CPUPeriod))
+	err = manager.AddProc(uint64(pid))
+	if err != nil {
+		fmt.Println("error adding process to the cgroup: ", err.Error())
+	}
 
 	stopVMandCleanUp := func() error {
 		if debug {
@@ -178,8 +184,9 @@ func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig, debug bool) 
 func RunStandaloneVM() {
 	startTime := time.Now()
 	vm, err := StartVM(true, &types.FirecrackerConfig{
-		CPUCount:   1,
 		MemSizeMib: 128,
+		CPUQuota:   200000,
+		CPUPeriod:  1000000,
 	}, true)
 	executionTime := time.Since(startTime)
 	if err != nil {

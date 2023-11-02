@@ -10,8 +10,9 @@ import (
 func measureFirecrackerStartupTime() time.Duration {
 	fmt.Println("Measuring firecracker startup time...")
 	config := &types.FirecrackerConfig{
-		CPUCount:   1,
 		MemSizeMib: 128,
+		CPUQuota:   200000,
+		CPUPeriod:  1000000,
 	}
 	startTime := time.Now()
 	vm, err := firerunner.StartVM(false, config, false)

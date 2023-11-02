@@ -78,6 +78,19 @@ func CreateCgroup(name string, maxMem, cpuQuota int64, cpuPeriod uint64) *cgroup
 	return manager
 }
 
+func CreateCPUCgroup(name string, cpuQuota int64, cpuPeriod uint64) *cgroup2.Manager {
+	resources := &cgroup2.Resources{
+		CPU: &cgroup2.CPU{
+			Max: cgroup2.NewCPUMax(&cpuQuota, &cpuPeriod),
+		},
+	}
+	manager, err := cgroup2.NewSystemd("/", name, -1, resources)
+	if err != nil {
+		println("error creating a cgroup: ", err.Error())
+	}
+	return manager
+}
+
 func getCgroup(id string, maxMem, cpuQuota int64, cpuPeriod uint64) *cgroup2.Manager {
 	name := "mycgroup-" + id + ".slice"
 	fmt.Printf("cgroup name: %s\n", name)

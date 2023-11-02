@@ -24,8 +24,9 @@ func runServer() {
 
 func runVM() {
 	vm, err := firerunner.StartVM(true, &types.FirecrackerConfig{
-		CPUCount:   1,
 		MemSizeMib: 128,
+		CPUQuota:   200000,
+		CPUPeriod:  1000000,
 	}, true)
 	defer vm.StopVMandCleanUp()
 	if err != nil {

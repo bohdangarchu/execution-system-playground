@@ -12,8 +12,9 @@ var defaultConfig = types.Config{
 	Isolation: "docker",
 	Workers:   1,
 	Firecracker: &types.FirecrackerConfig{
-		CPUCount:   1,
 		MemSizeMib: 128,
+		CPUQuota:   125000,
+		CPUPeriod:  1000000,
 	},
 	Docker: &types.DockerConfig{
 		MaxMemSize: 10000000,
@@ -22,7 +23,8 @@ var defaultConfig = types.Config{
 	},
 	ProcessIsolation: &types.ProcessIsolationConfig{
 		MaxMemSize: 100000000,
-		CPUQuota:   100,
+		CPUQuota:   125000,
+		CPUPeriod:  1000000,
 	},
 }
 
@@ -65,8 +67,11 @@ func LoadConfig(path string) types.Config {
 	if config.Docker.CPUPeriod < 0 {
 		panic("Docker CPU period cannot be negative")
 	}
-	if config.Firecracker.CPUCount < 0 {
-		panic("Firecracker CPU count cannot be negative")
+	if config.Firecracker.CPUQuota < 0 {
+		panic("Firecracker CPU quota cannot be negative")
+	}
+	if config.Firecracker.CPUPeriod < 0 {
+		panic("Firecracker CPU period cannot be negative")
 	}
 	if config.Firecracker.MemSizeMib < 0 {
 		panic("Firecracker memory size cannot be negative")

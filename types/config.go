@@ -1,8 +1,9 @@
 package types
 
 type FirecrackerConfig struct {
-	CPUCount   int `json:"cpuCount"`
 	MemSizeMib int `json:"memSizeMib"`
+	CPUQuota   int `json:"cpuQuota"`
+	CPUPeriod  int `json:"cpuPeriod"`
 }
 
 type DockerConfig struct {
