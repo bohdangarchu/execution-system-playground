@@ -7,7 +7,8 @@ type FirecrackerConfig struct {
 
 type DockerConfig struct {
 	MaxMemSize int `json:"maxMemSize"`
-	NanoCPUs   int `json:"nanoCPUs"`
+	CPUQuota   int `json:"cpuQuota"`
+	CPUPeriod  int `json:"cpuPeriod"`
 }
 
 type ProcessIsolationConfig struct {

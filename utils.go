@@ -17,7 +17,8 @@ var defaultConfig = types.Config{
 	},
 	Docker: &types.DockerConfig{
 		MaxMemSize: 10000000,
-		NanoCPUs:   1000000000,
+		CPUQuota:   125000,
+		CPUPeriod:  1000000,
 	},
 	ProcessIsolation: &types.ProcessIsolationConfig{
 		CgroupMaxMem: 100000000,
@@ -58,8 +59,11 @@ func LoadConfig(path string) types.Config {
 	if config.Docker.MaxMemSize < 0 {
 		panic("Docker max memory size cannot be negative")
 	}
-	if config.Docker.NanoCPUs < 0 {
-		panic("Docker nano CPUs cannot be negative")
+	if config.Docker.CPUQuota < 0 {
+		panic("Docker CPU quota cannot be negative")
+	}
+	if config.Docker.CPUPeriod < 0 {
+		panic("Docker CPU period cannot be negative")
 	}
 	if config.Firecracker.CPUCount < 0 {
 		panic("Firecracker CPU count cannot be negative")

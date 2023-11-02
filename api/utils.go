@@ -22,8 +22,7 @@ func monitorContainerHealth(containerPool chan types.DockerContainer, config *ty
 			docrunner.CleanUp(&container, true)
 			newContainer, err := docrunner.StartExecutionServerInDocker(
 				container.Port,
-				int64(config.Docker.MaxMemSize),
-				int64(config.Docker.NanoCPUs),
+				config.Docker,
 			)
 			if err != nil {
 				fmt.Printf("failed to start docker container: %v\n", err)

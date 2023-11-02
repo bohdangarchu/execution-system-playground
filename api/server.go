@@ -48,8 +48,7 @@ func runInWorkerPool(config *types.Config) {
 			container, err := docrunner.StartExecutionServerInDocker(
 				// with 0 docker will pick an available port
 				"0",
-				int64(config.Docker.MaxMemSize),
-				int64(config.Docker.NanoCPUs),
+				config.Docker,
 			)
 			if err != nil {
 				panic(err)

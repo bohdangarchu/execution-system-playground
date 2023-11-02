@@ -61,8 +61,9 @@ func SendJsonToUnixSocket(socketPath string, jsonSubmission string) (string, err
 	return string(responseBody), nil
 }
 
-func createCgroup(name string, maxMem int64, maxCpu uint64) *cgroup2.Manager {
+func CreateCgroup(name string, maxMem int64, maxCpu uint64) *cgroup2.Manager {
 	// TODO delete cgroup after usage
+	// TODO fix config
 	quota := int64(250000)
 	period := uint64(1000000)
 	resources := &cgroup2.Resources{
@@ -83,7 +84,7 @@ func createCgroup(name string, maxMem int64, maxCpu uint64) *cgroup2.Manager {
 func getCgroup(id string, maxMem int64, maxCpu uint64) *cgroup2.Manager {
 	name := "mycgroup-" + id + ".slice"
 	fmt.Printf("cgroup name: %s\n", name)
-	return createCgroup(name, maxMem, maxCpu)
+	return CreateCgroup(name, maxMem, maxCpu)
 	// cgroupPath := "/sys/fs/cgroup/" + CGROUP_NAME + "/cgroup.controllers"
 	// _, err := os.Stat(cgroupPath)
 	// if os.IsNotExist(err) {

@@ -2,6 +2,7 @@ package firerunner
 
 import (
 	"app/types"
+	"app/workerrunner"
 	"bytes"
 	"context"
 	"fmt"
@@ -138,10 +139,20 @@ func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig, debug bool) 
 	vm, err := firecracker.NewMachine(vmmCtx, fcCfg, machineOpts...)
 
 	if err != nil {
-		log.Fatalf("Failed creating machine: %s", err)
+		panic("Failed creating machine" + err.Error())
 	}
 	if err := vm.Start(vmmCtx); err != nil {
-		log.Fatalf("Failed to start machine: %v", err)
+		panic("Failed to start machine" + err.Error())
+	}
+	pid, err := vm.PID()
+	if err != nil {
+		fmt.Printf("Failed to get PID: %v", err)
+	}
+	fmt.Printf("VM PID: %d\n", pid)
+	manager := workerrunner.CreateCgroup("firecracker-"+vmID+".slice", int64(150000000), uint64(config.CPUCount))
+	err = manager.AddProc(uint64(pid))
+	if err != nil {
+		fmt.Println("error adding process to the cgroup: ", err.Error())
 	}
 
 	stopVMandCleanUp := func() error {

@@ -18,7 +18,12 @@ import (
 )
 
 func StartContainerAndRunSubmission(jsonSubmission string) (string, error) {
-	dockerContainer, err := StartExecutionServerInDocker("8080", 10000000, 1000000000)
+	config := &types.DockerConfig{
+		MaxMemSize: 10000000,
+		CPUQuota:   125000,
+		CPUPeriod:  1000000,
+	}
+	dockerContainer, err := StartExecutionServerInDocker("8080", config)
 	if err != nil {
 		return "", err
 	}
@@ -93,7 +98,7 @@ func KillDockerContainer(dockerContainer *types.DockerContainer) error {
 	return dockerContainer.Cli.ContainerKill(dockerContainer.Ctx, dockerContainer.ContainerId, "SIGKILL")
 }
 
-func StartExecutionServerInDocker(port string, maxMemory int64, nanoCPUs int64) (*types.DockerContainer, error) {
+func StartExecutionServerInDocker(port string, config *types.DockerConfig) (*types.DockerContainer, error) {
 	// starts a docker container with the image "execution-server"
 	fmt.Println("Starting docker container...")
 	// Create a background context
@@ -123,10 +128,10 @@ func StartExecutionServerInDocker(port string, maxMemory int64, nanoCPUs int64) 
 					},
 				},
 			},
-			// 10 mb, 1 cpu
 			Resources: container.Resources{
-				Memory:   maxMemory,
-				NanoCPUs: nanoCPUs,
+				Memory:    int64(config.MaxMemSize),
+				CPUQuota:  int64(config.CPUQuota),
+				CPUPeriod: int64(config.CPUPeriod),
 			},
 		}, nil, nil, "")
 	if err != nil {

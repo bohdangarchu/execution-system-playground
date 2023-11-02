@@ -96,8 +96,7 @@ func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 		container, err := docrunner.StartExecutionServerInDocker(
 			// with 0 docker will pick an available port
 			"0",
-			int64(config.Docker.MaxMemSize),
-			int64(config.Docker.NanoCPUs),
+			config.Docker,
 		)
 		// defer docrunner.CleanUp(container, false)
 		if err != nil {

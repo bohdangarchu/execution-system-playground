@@ -72,8 +72,13 @@ func ExecuteWithTime(input1 string, input2 string, fn StringFunction) (string, e
 func TimeDockerStartupAndSubmission() error {
 	// old
 	startTime := time.Now()
+	config := &types.DockerConfig{
+		MaxMemSize: 10000000,
+		CPUQuota:   125000,
+		CPUPeriod:  1000000,
+	}
 	// time the execution
-	dockerContainer, err := docrunner.StartExecutionServerInDocker("8080", 10000000, 1000000000)
+	dockerContainer, err := docrunner.StartExecutionServerInDocker("8080", config)
 	if err != nil {
 		return err
 	}

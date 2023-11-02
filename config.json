@@ -1,5 +1,5 @@
 {
-    "isolation": "process",
+    "isolation": "docker",
     "workers": 1,
     "firecracker": {
         "cpuCount": 1,
@@ -7,7 +7,8 @@
     },
     "docker": {
         "maxMemSize": 100000000,
-        "nanoCPUs": 1000000000
+        "cpuQuota": 200000,
+        "cpuPeriod": 1000000
     },
     "processIsolation": {
         "cgroupMaxMem": 100000000,
