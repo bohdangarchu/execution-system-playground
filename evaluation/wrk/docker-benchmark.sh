@@ -2,8 +2,8 @@
 
 set -e
 
-n=10
-echo "benchmark docker, worker pool (n=5) (changed memory limit from 10Mb to 100Mb)"
+n=5
+echo "benchmark baseline, worker per request"
 
 echo "one client, js"
 wrk -s js_submission.lua -t1 -c1 -d60s --timeout 60s http://localhost:8080/execute

@@ -164,8 +164,11 @@ func StartVM(useDefaultDrive bool, config *types.FirecrackerConfig, debug bool) 
 		if debug {
 			fmt.Printf("Stopping VM: %s\n", vmID)
 		}
-		vm.StopVMM()
-		RemoveSocket(vmID)
+		err := vm.StopVMM()
+		if err != nil {
+			fmt.Printf("Failed to stop VM: %v\n", err)
+		}
+		err = utils.RemoveFileIfExists(fcCfg.SocketPath)
 		if !useDefaultDrive {
 			os.Remove(*vm.Cfg.Drives[0].PathOnHost)
 		}

@@ -101,7 +101,10 @@ func runInWorkerPool(config *types.Config) {
 		} else {
 			for i := 0; i < config.Workers; i++ {
 				worker := <-workerPool
-				workerrunner.KillWorker(&worker)
+				err := worker.CleanUp()
+				if err != nil {
+					fmt.Printf("error cleaning up worker: %v\n", err)
+				}
 			}
 		}
 		w.WriteHeader(http.StatusOK)

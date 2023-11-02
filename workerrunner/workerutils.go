@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"os"
+	"os/exec"
 	"syscall"
 	"time"
 
@@ -91,13 +91,8 @@ func IsWorkerRunning(worker *types.V8Worker) bool {
 	}
 }
 
-func KillWorker(worker *types.V8Worker) {
-	worker.Cmd.Process.Signal(os.Interrupt)
-	// check if the socket file exists
-	// if it does, remove it
-	if _, err := os.Stat(worker.SocketPath); err == nil {
-		os.Remove(worker.SocketPath)
-	}
+func KillWorker(cmd *exec.Cmd) error {
+	return cmd.Process.Kill()
 }
 
 func CheckWorkerHealth(worker *types.V8Worker) bool {

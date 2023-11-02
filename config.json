@@ -1,18 +1,18 @@
 {
     "isolation": "firecracker",
-    "workers": 1,
+    "workers": 0,
     "firecracker": {
-        "memSizeMib": 128,
-        "cpuQuota": 200000,
+        "memSizeMib": 256,
+        "cpuQuota": 300000,
         "cpuPeriod": 1000000
     },
     "docker": {
-        "maxMemSize": 100000000,
+        "maxMemSize": 268435000,
         "cpuQuota": 200000,
         "cpuPeriod": 1000000
     },
     "processIsolation": {
-        "maxMemSize": 100000000,
+        "maxMemSize": 268435000,
         "cpuQuota": 200000,
         "cpuPeriod": 1000000
     }

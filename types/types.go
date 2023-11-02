@@ -59,4 +59,5 @@ type V8Worker struct {
 	ExecutablePath string
 	Pid            int
 	Cmd            *exec.Cmd
+	CleanUp        func() error
 }

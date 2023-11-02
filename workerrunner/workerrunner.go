@@ -2,6 +2,7 @@ package workerrunner
 
 import (
 	"app/types"
+	"app/utils"
 	"fmt"
 	"os"
 	"os/exec"
@@ -47,5 +48,17 @@ func StartProcessWorker(config *types.ProcessIsolationConfig) *types.V8Worker {
 		ExecutablePath: WORKER_PATH,
 		Pid:            pid,
 		Cmd:            cmd,
+		CleanUp: func() error {
+			err := KillWorker(cmd)
+			if err != nil {
+				return err
+			}
+			err = manager.Delete()
+			if err != nil {
+				return err
+			}
+			err = utils.RemoveFileIfExists(socketPath)
+			return err
+		},
 	}
 }

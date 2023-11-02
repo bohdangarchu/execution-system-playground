@@ -41,6 +41,13 @@ func CreateCPUCgroup(name string, cpuQuota int64, cpuPeriod uint64) *cgroup2.Man
 	return manager
 }
 
+func RemoveFileIfExists(socketPath string) error {
+	if _, err := os.Stat(socketPath); err == nil {
+		return os.Remove(socketPath)
+	}
+	return nil
+}
+
 var defaultConfig = types.Config{
 	Isolation: "docker",
 	Workers:   1,
