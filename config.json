@@ -1,5 +1,5 @@
 {
-    "isolation": "docker",
+    "isolation": "process",
     "workers": 1,
     "firecracker": {
         "cpuCount": 1,
@@ -12,6 +12,7 @@
     },
     "processIsolation": {
         "cgroupMaxMem": 100000000,
-        "cgroupMaxCPU": 100
+        "cpuQuota": 200000,
+        "cpuPeriod": 1000000
     }
 }

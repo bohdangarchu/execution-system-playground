@@ -11,8 +11,7 @@ import (
 
 const WORKER_PATH = "/home/bohdan/workspace/uni/thesis/worker/main"
 
-func StartProcessWorker(maxMem int, maxCpu int) *types.V8Worker {
-	// generate random id
+func StartProcessWorker(config *types.ProcessIsolationConfig) *types.V8Worker {
 	id := xid.New().String()
 	socketPath := fmt.Sprintf("/tmp/worker-%s.sock", id)
 	println("socket path: ", socketPath)
@@ -36,7 +35,7 @@ func StartProcessWorker(maxMem int, maxCpu int) *types.V8Worker {
 	}()
 	pid := cmd.Process.Pid
 	fmt.Println("pid of the worker: ", pid)
-	manager := getCgroup(id, int64(maxMem), uint64(maxCpu))
+	manager := getCgroup(id, int64(config.MaxMemSize), int64(config.CPUQuota), uint64(config.CPUPeriod))
 	// add the pid to the cgroup
 	err := manager.AddProc(uint64(pid))
 	if err != nil {

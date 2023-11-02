@@ -12,8 +12,9 @@ type DockerConfig struct {
 }
 
 type ProcessIsolationConfig struct {
-	CgroupMaxMem int `json:"cgroupMaxMem"`
-	CgroupMaxCPU int `json:"cgroupMaxCPU"`
+	MaxMemSize int `json:"maxMemSize"`
+	CPUQuota   int `json:"cpuQuota"`
+	CPUPeriod  int `json:"cpuPeriod"`
 }
 
 type Config struct {

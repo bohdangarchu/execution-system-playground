@@ -21,8 +21,8 @@ var defaultConfig = types.Config{
 		CPUPeriod:  1000000,
 	},
 	ProcessIsolation: &types.ProcessIsolationConfig{
-		CgroupMaxMem: 100000000,
-		CgroupMaxCPU: 100,
+		MaxMemSize: 100000000,
+		CPUQuota:   100,
 	},
 }
 

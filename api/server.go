@@ -78,8 +78,7 @@ func runInWorkerPool(config *types.Config) {
 		workerPool = make(chan types.V8Worker, config.Workers)
 		for i := 0; i < config.Workers; i++ {
 			worker := workerrunner.StartProcessWorker(
-				config.ProcessIsolation.CgroupMaxMem,
-				config.ProcessIsolation.CgroupMaxCPU,
+				config.ProcessIsolation,
 			)
 			workerrunner.WaitUntilAvailable(worker)
 			workerPool <- *worker

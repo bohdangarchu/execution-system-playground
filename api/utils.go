@@ -64,8 +64,7 @@ func monitorV8Worker(workerPool chan types.V8Worker, config *types.ProcessIsolat
 			fmt.Printf("worker %s is not healthy, killing it\n", worker.Id)
 			workerrunner.KillWorker(&worker)
 			newWorker := workerrunner.StartProcessWorker(
-				config.CgroupMaxMem,
-				config.CgroupMaxCPU,
+				config,
 			)
 			workerPool <- *newWorker
 		}

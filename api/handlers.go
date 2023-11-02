@@ -69,8 +69,7 @@ func getWorkerHandler(workerPool chan types.V8Worker, config *types.ProcessIsola
 		} else {
 			fmt.Println("worker ", worker.Pid, " is not running, starting a new one")
 			newWorker := workerrunner.StartProcessWorker(
-				config.CgroupMaxMem,
-				config.CgroupMaxCPU,
+				config,
 			)
 			workerPool <- *newWorker
 		}
@@ -165,8 +164,7 @@ func getWorkerHandlerWithNewWorker(config *types.Config) http.HandlerFunc {
 		jsonSubmission := buf.String()
 
 		worker := workerrunner.StartProcessWorker(
-			config.ProcessIsolation.CgroupMaxMem,
-			config.ProcessIsolation.CgroupMaxCPU,
+			config.ProcessIsolation,
 		)
 		workerrunner.WaitUntilAvailable(worker)
 		result, err := workerrunner.SendJsonToUnixSocket(worker.SocketPath, jsonSubmission)
