@@ -5,6 +5,16 @@ import threading
 import matplotlib.pyplot as plt
 from datetime import datetime
 
+interval = 1
+
+filter_keywords = ['python', 'stats', 'grep']
+
+def is_valid(process_cmdline):
+    for keyword in filter_keywords:
+        if keyword in process_cmdline:
+            return False
+    return True
+
 def get_process_info(keyword="firecracker"):
     process_dicts = []
     for process in psutil.process_iter(attrs=['pid', 'name', 'cmdline', 'memory_info', 'cpu_percent']):
@@ -14,10 +24,12 @@ def get_process_info(keyword="firecracker"):
             process_name = process_info['name']
             process_cmdline = " ".join(process_info['cmdline'])
             process_memory = process_info['memory_info']
-            if keyword in process_cmdline and "python" not in process_name:
+            if keyword in process_cmdline and is_valid(process_cmdline):
+                print(process_memory)
                 process_dicts.append({
                     'pid': pid,
-                    # 'cmdline': process_cmdline,
+                    'name': process_name,
+                    'cmdline': process_cmdline,
                     'memory': process_memory.rss,
                 })
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -28,13 +40,21 @@ def track_cpu_usage(process_dict):
     pid = process_dict['pid']
     try:
         process = psutil.Process(pid)
-        process_dict['cpu_percent'] = process.cpu_percent(interval=1)
+        process_dict['cpu_percent'] = process.cpu_percent(interval=interval)
     except psutil.NoSuchProcess:
         pass
 
 def track_resource_usage(keyword="firecracker"):
     info_list = get_process_info(keyword)
     threads = []
+
+    if len(info_list) == 0:
+        time.sleep(interval)
+        return {
+            'timestamp': datetime.fromtimestamp(time.time()),
+            'cpu_percent': 0,
+            'memory': 0,
+        }
 
     for process_info in info_list:
         cpu_thread = threading.Thread(target=track_cpu_usage, args=(process_info,))
@@ -50,8 +70,8 @@ def track_resource_usage(keyword="firecracker"):
     mem_sum = 0
     timestamp = time.time()
     for process_info in info_list:
-        cpu_sum += process_info['cpu_percent']
-        mem_sum += process_info['memory']
+        cpu_sum += process_info.get('cpu_percent', 0)
+        mem_sum += process_info.get('memory', 0)
 
     return {
         'timestamp': datetime.fromtimestamp(timestamp),
@@ -66,7 +86,7 @@ if __name__ == "__main__":
 
     info_list = []
     for i in range(n):
-        info_dict = track_resource_usage()
+        info_dict = track_resource_usage('firecracker')
         info_list.append(info_dict)
 
     print(info_list)
