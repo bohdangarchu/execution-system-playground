@@ -41,38 +41,42 @@ def track_resource_usage(keyword):
 
     if len(info_list) == 0:
         return {
-            'timestamp': datetime.fromtimestamp(time.time()),
+            'timestamp': time.time(),
             'memory': 0,
         }
 
     print(info_list)
     mem_sum = 0
-    timestamp = time.time()
     for process_info in info_list:
         mem_sum += process_info.get('memory', 0)
 
     return {
-        'timestamp': datetime.fromtimestamp(timestamp),
+        'timestamp': time.time(),
         'memory': mem_sum / (1024 * 1024),
     }
 
 if __name__ == "__main__":
     duration = 20
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2:
         duration = int(sys.argv[1])
+        keyword = sys.argv[2]
 
+    timestamp = time.time()
     info_list = []
     for i in range(int(duration / interval)):
-        info_dict = track_resource_usage('execution-system-bin')
+        info_dict = track_resource_usage(keyword)
         info_list.append(info_dict)
         time.sleep(interval)
+        if time.time() - timestamp > duration:
+            break
 
-    # print(info_list)
-    timestamps = [info_dict['timestamp'] for info_dict in info_list]
+    timestamps = [info_dict['timestamp'] - timestamp for info_dict in info_list]
     ram_usages = [info_dict['memory'] for info_dict in info_list]
+    print(timestamps)
+    print(ram_usages)
 
     plt.plot(timestamps, ram_usages)
-    plt.xlabel('Timestamp')
+    plt.xlabel('Time (seconds)')
     plt.ylabel('RAM Usage (MB)')
     plt.title('RAM Usage over Time')
     # start at y=0

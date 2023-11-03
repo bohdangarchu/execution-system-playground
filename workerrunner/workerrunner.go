@@ -10,7 +10,7 @@ import (
 	"github.com/rs/xid"
 )
 
-const WORKER_PATH = "/home/bohdan/workspace/uni/thesis/worker/main"
+const WORKER_PATH = "/home/bohdan/workspace/uni/thesis/worker/worker-bin"
 
 func StartProcessWorker(config *types.ProcessIsolationConfig) *types.V8Worker {
 	id := xid.New().String()

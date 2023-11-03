@@ -111,6 +111,7 @@ func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		w.Write(responseJSON)
 		// executed := time.Now()
+		// docrunner.CleanUp(container, false)
 		// done := time.Now()
 		// fmt.Printf(
 		// 	"took %s to start container, %s to run the submission and %s to clean up\n",

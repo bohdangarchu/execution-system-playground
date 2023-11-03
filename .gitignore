@@ -5,6 +5,7 @@ ps_output.txt
 cgroup.procs
 
 main
+execution-system-bin
 
 config.json
 log.txt

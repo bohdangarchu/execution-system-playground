@@ -15,7 +15,7 @@ def is_valid(process_cmdline):
             return False
     return True
 
-def get_process_info(keyword="firecracker"):
+def get_process_info(keyword):
     process_dicts = []
     for process in psutil.process_iter(attrs=['pid', 'name', 'cmdline', 'memory_info', 'cpu_percent']):
         try:
@@ -44,14 +44,14 @@ def track_cpu_usage(process_dict):
     except psutil.NoSuchProcess:
         pass
 
-def track_resource_usage(keyword="firecracker"):
+def track_resource_usage(keyword):
     info_list = get_process_info(keyword)
     threads = []
 
     if len(info_list) == 0:
         time.sleep(interval)
         return {
-            'timestamp': datetime.fromtimestamp(time.time()),
+            'timestamp': time.time(),
             'cpu_percent': 0,
             'memory': 0,
         }
@@ -68,45 +68,40 @@ def track_resource_usage(keyword="firecracker"):
     print(info_list)
     cpu_sum = 0
     mem_sum = 0
-    timestamp = time.time()
     for process_info in info_list:
         cpu_sum += process_info.get('cpu_percent', 0)
         mem_sum += process_info.get('memory', 0)
 
     return {
-        'timestamp': datetime.fromtimestamp(timestamp),
+        'timestamp': time.time(),
         'cpu_percent': cpu_sum,
         'memory': mem_sum / (1024 * 1024),
     }
 
 if __name__ == "__main__":
-    n = 50
-    if len(sys.argv) > 1:
-        n = int(sys.argv[1])
+    duration = 50
+    if len(sys.argv) > 2:
+        duration = int(sys.argv[1])
+        keyword = sys.argv[2]
 
+    timestamp = time.time()
     info_list = []
-    for i in range(n):
-        info_dict = track_resource_usage('firecracker')
+    for i in range(duration):
+        info_dict = track_resource_usage(keyword)
         info_list.append(info_dict)
+        if time.time() - timestamp > duration:
+            break
 
-    print(info_list)
-    timestamps = [info_dict['timestamp'] for info_dict in info_list]
+    timestamps = [info_dict['timestamp'] - timestamp for info_dict in info_list]
     cpu_usages = [info_dict['cpu_percent'] for info_dict in info_list]
-    ram_usages = [info_dict['memory'] for info_dict in info_list]
+    print(timestamps)
+    print(cpu_usages)
 
-    # Create a figure with two subplots
-    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-
-    # First subplot for CPU usage
-    ax1.set_ylabel('CPU Usage (%)')
-    ax1.plot(timestamps, cpu_usages, marker='o', linestyle='-')
-    ax1.set_ylim(0, max(cpu_usages))  # Set the y-axis limits to start at 0
-
-    # Second subplot for RAM usage
-    ax2.set_xlabel('Timestamp')
-    ax2.set_ylabel('RAM Usage (MB)')
-    ax2.plot(timestamps, ram_usages, marker='o', linestyle='-')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-
+    plt.plot(timestamps, cpu_usages)
+    plt.xlabel('Time (s)')
+    plt.ylabel('CPU Usage (%)')
+    plt.title('CPU Usage')
+    # start at y=0
+    axes = plt.gca()
+    axes.set_ylim([0, None])
     plt.show()

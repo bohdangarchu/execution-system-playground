@@ -1,9 +1,9 @@
 {
-    "isolation": "firecracker",
+    "isolation": "docker",
     "workers": 0,
     "firecracker": {
-        "memSizeMib": 256,
-        "cpuQuota": 300000,
+        "memSizeMib": 1024,
+        "cpuQuota": 1000000,
         "cpuPeriod": 1000000
     },
     "docker": {
