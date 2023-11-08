@@ -6,7 +6,6 @@ import (
 	"app/types"
 	"app/workerrunner"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -175,42 +174,4 @@ func getWorkerHandlerWithNewWorker(config *types.Config) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		w.Write(responseJSON)
 	}
-}
-
-func handleRequestWithDocker(w http.ResponseWriter, r *http.Request) {
-	// not used
-	var functionSubmission types.FunctionSubmission
-	err := json.NewDecoder(r.Body).Decode(&functionSubmission)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to parse request body: %v", err), http.StatusBadRequest)
-		fmt.Println(fmt.Sprintf("failed to parse request body: %v", err))
-		return
-	}
-
-	jsonSubmission, err := json.Marshal(functionSubmission)
-	responseString, err := docrunner.StartContainerAndRunSubmission(string(jsonSubmission))
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)
-		return
-	}
-	responseJSON := []byte(responseString)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(responseJSON)
-}
-
-func handleRequestWithFirecracker(w http.ResponseWriter, r *http.Request) {
-	// not used
-	// get json string from request body
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(r.Body)
-	jsonSubmission := buf.String()
-
-	responseString := firerunner.StartVMandRunSubmission(jsonSubmission)
-	responseJSON := []byte(responseString)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(responseJSON)
 }

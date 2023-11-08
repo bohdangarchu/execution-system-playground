@@ -18,67 +18,13 @@ import (
 
 const FIRECRACKER_BIN_PATH = "/home/bohdan/software/firecracker/build/cargo_target/x86_64-unknown-linux-musl/debug/firecracker"
 const KERNEL_IMAGE_PATH = "/home/bohdan/workspace/assets/hello-vmlinux.bin"
+const FILESYSTEM_IMAGE_PATH = "/home/bohdan/workspace/uni/thesis/worker/firecracker/rootfs.ext4"
 
 func RunSubmissionInsideVM(vm *types.FirecrackerVM, jsonSubmission string) (string, error) {
 	return executeJSONSubmissionInVM(
 		vm.Ip.String(),
 		jsonSubmission,
 	)
-}
-
-func StartVMandRunSubmission(jsonSubmission string) string {
-	startTimeStamp := time.Now()
-	logger := log.New()
-	vmID := xid.New().String()
-	config := &types.FirecrackerConfig{
-		MemSizeMib: 128,
-		CPUQuota:   200000,
-		CPUPeriod:  1000000,
-	}
-	fcCfg := getVMConfig(vmID, config, false)
-	defer RemoveSocket(vmID)
-	machineOpts := []firecracker.Opt{
-		firecracker.WithLogger(log.NewEntry(logger)),
-	}
-	ctx := context.Background()
-	vmmCtx, vmmCancel := context.WithCancel(ctx)
-	defer vmmCancel()
-	cmd := firecracker.VMCommandBuilder{}.
-		WithBin(FIRECRACKER_BIN_PATH).
-		WithSocketPath(fcCfg.SocketPath).
-		WithStdin(os.Stdin).
-		WithStdout(os.Stdout).
-		WithStderr(os.Stderr).
-		Build(ctx)
-	machineOpts = append(machineOpts, firecracker.WithProcessRunner(cmd))
-	vm, err := firecracker.NewMachine(vmmCtx, fcCfg, machineOpts...)
-
-	if err != nil {
-		log.Fatalf("Failed creating machine: %s", err)
-	}
-	if err := vm.Start(vmmCtx); err != nil {
-		log.Fatalf("Failed to start machine: %v", err)
-	}
-	bootTime := time.Since(startTimeStamp)
-	bootTimeStamp := time.Now()
-	log.Printf("VM started at: %v", bootTimeStamp)
-	log.Printf("VM started in: %s", &bootTime)
-
-	// for some reason takes >1s
-	result, err := executeJSONSubmissionInVM(
-		vm.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP.String(),
-		jsonSubmission,
-	)
-	if err != nil {
-		log.Printf("Failed to execute JSON submission in VM: %v", err)
-	}
-	executionTime := time.Since(bootTimeStamp)
-	log.Printf("Submission executed in: %s", executionTime)
-
-	// time.Sleep(30 * time.Second)
-	vm.StopVMM()
-	log.Printf("Start machine was happy")
-	return result
 }
 
 func executeJSONSubmissionInVM(ip string, jsonSubmission string) (string, error) {

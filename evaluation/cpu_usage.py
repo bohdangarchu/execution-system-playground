@@ -5,7 +5,7 @@ import threading
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-interval = 1
+interval = 0.1
 
 filter_keywords = ['python', 'stats', 'grep']
 
@@ -22,6 +22,9 @@ def get_process_info(keyword):
             process_info = process.info
             pid = process_info['pid']
             process_name = process_info['name']
+            if not (process_info['cmdline'] and isinstance(process_info['cmdline'], list)):
+                # print(process_info)
+                continue
             process_cmdline = " ".join(process_info['cmdline'])
             process_memory = process_info['memory_info']
             if keyword in process_cmdline and is_valid(process_cmdline):
@@ -40,7 +43,7 @@ def track_cpu_usage(process_dict):
     pid = process_dict['pid']
     try:
         process = psutil.Process(pid)
-        process_dict['cpu_percent'] = process.cpu_percent(interval=interval)
+        process_dict['cpu_percent'] = process.cpu_percent(interval=interval) / psutil.cpu_count(logical=True)
     except psutil.NoSuchProcess:
         pass
 
@@ -86,7 +89,7 @@ if __name__ == "__main__":
 
     timestamp = time.time()
     info_list = []
-    for i in range(duration):
+    for i in range(int(duration/interval)):
         info_dict = track_resource_usage(keyword)
         info_list.append(info_dict)
         if time.time() - timestamp > duration:
@@ -100,7 +103,7 @@ if __name__ == "__main__":
     plt.plot(timestamps, cpu_usages)
     plt.xlabel('Time (s)')
     plt.ylabel('CPU Usage (%)')
-    plt.title('CPU Usage')
+    plt.title('CPU Usage over Time')
     # start at y=0
     axes = plt.gca()
     axes.set_ylim([0, None])

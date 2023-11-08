@@ -16,7 +16,6 @@ import (
 
 func getCNINetworkInterfaces() []firecracker.NetworkInterface {
 	return []firecracker.NetworkInterface{{
-		// Use CNI to get dynamic IP
 		CNIConfiguration: &firecracker.CNIConfiguration{
 			NetworkName: "fcnet",
 			IfName:      "veth0",
@@ -54,7 +53,7 @@ func GetUniqueDrive(id string) models.Drive {
 func getDefaultDrive() models.Drive {
 	return models.Drive{
 		DriveID:      firecracker.String("1"),
-		PathOnHost:   firecracker.String("/home/bohdan/workspace/uni/thesis/worker/firecracker/rootfs.ext4"),
+		PathOnHost:   firecracker.String(FILESYSTEM_IMAGE_PATH),
 		IsRootDevice: firecracker.Bool(true),
 		IsReadOnly:   firecracker.Bool(true),
 	}
@@ -62,9 +61,8 @@ func getDefaultDrive() models.Drive {
 
 func CopyBaseRootfs(id string) (string, error) {
 	// copy rootfs.ext4 to /tmp/<id>-rootfs.ext4
-	root_drive_path := "/home/bohdan/workspace/uni/thesis/worker/firecracker/rootfs.ext4"
 	// Read the contents of the source file
-	data, err := ioutil.ReadFile(root_drive_path)
+	data, err := ioutil.ReadFile(FILESYSTEM_IMAGE_PATH)
 	if err != nil {
 		return "", err
 	}
@@ -72,7 +70,7 @@ func CopyBaseRootfs(id string) (string, error) {
 	tmpDir := os.TempDir()
 
 	// Get the filename from the source path
-	sourceFileName := filepath.Base(root_drive_path)
+	sourceFileName := filepath.Base(FILESYSTEM_IMAGE_PATH)
 
 	// Create the destination file path in the temporary directory
 	destinationPath := filepath.Join(tmpDir, id+"-"+sourceFileName)
@@ -87,11 +85,10 @@ func CopyBaseRootfs(id string) (string, error) {
 
 func CopyBaseRootfsWithIO(id string) (string, error) {
 	// copy rootfs.ext4 to /tmp/<id>-rootfs.ext4
-	root_drive_path := "/home/bohdan/workspace/uni/thesis/worker/firecracker/rootfs.ext4"
 	tmpDir := os.TempDir()
-	sourceFileName := filepath.Base(root_drive_path)
+	sourceFileName := filepath.Base(FILESYSTEM_IMAGE_PATH)
 	destinationPath := filepath.Join(tmpDir, id+"-"+sourceFileName)
-	err := copyFileWithIO(root_drive_path, destinationPath)
+	err := copyFileWithIO(FILESYSTEM_IMAGE_PATH, destinationPath)
 	if err != nil {
 		return "", err
 	}

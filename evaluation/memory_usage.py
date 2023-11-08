@@ -5,7 +5,7 @@ import threading
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-interval = 0.25
+interval = 0.1
 
 filter_keywords = ['python', 'stats', 'grep']
 
@@ -22,6 +22,9 @@ def get_process_info(keyword):
             process_info = process.info
             pid = process_info['pid']
             process_name = process_info['name']
+            if not (process_info['cmdline'] and isinstance(process_info['cmdline'], list)):
+                # print(process_info)
+                continue
             process_cmdline = " ".join(process_info['cmdline'])
             process_memory = process_info['memory_info']
             if keyword in process_cmdline and is_valid(process_cmdline):
