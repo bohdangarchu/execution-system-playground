@@ -35,10 +35,7 @@ func getStaticNetworkInterfaces() []firecracker.NetworkInterface {
 }
 
 func GetUniqueDrive(id string) models.Drive {
-	startTime := time.Now()
 	path, err := CopyBaseRootfsWithIO(id)
-	endTime := time.Now()
-	fmt.Printf("Copying rootfs took: %s\n", endTime.Sub(startTime))
 	if err != nil {
 		panic(fmt.Sprintf("Failed to copy rootfs: %v", err))
 	}
@@ -121,9 +118,6 @@ func copyFileWithIO(src, dst string) error {
 }
 
 func getVMConfig(vmID string, config *types.FirecrackerConfig, useDefaultDrive bool) firecracker.Config {
-	// options for logging:
-	// LogPath:           "/tmp/fc.log",
-	// LogLevel:          "Debug",
 	socket_path := GetSocketPath(vmID)
 	var drive models.Drive
 	if useDefaultDrive {

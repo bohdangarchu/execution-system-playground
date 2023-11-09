@@ -8,34 +8,64 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
 
-func StartContainerAndRunSubmission(jsonSubmission string) (string, error) {
-	config := &types.DockerConfig{
-		MaxMemSize: 10000000,
-		CPUQuota:   125000,
-		CPUPeriod:  1000000,
-	}
-	dockerContainer, err := StartExecutionServerInDocker("8080", config)
+func StartExecutionServerInDocker(port string, config *types.DockerConfig) (*types.DockerContainer, error) {
+	// starts a docker container with the image "execution-server"
+	fmt.Println("Starting docker container...")
+	// Create a background context
+	ctx := context.Background()
+	// Initialize Docker client
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	defer cli.Close()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	defer CleanUp(dockerContainer, true)
-	// sometimes the docker container is not ready to receive requests
-	time.Sleep(50 * time.Millisecond)
+	resp, err := cli.ContainerCreate(
+		ctx,
+		&container.Config{
+			Image: "execution-server",
+			ExposedPorts: nat.PortSet{
+				"8080/tcp": struct{}{},
+			},
+			Tty: false,
+		},
+		&container.HostConfig{
+			PortBindings: nat.PortMap{
+				"8080/tcp": []nat.PortBinding{
+					{
+						HostIP:   "0.0.0.0",
+						HostPort: port,
+					},
+				},
+			},
+			Resources: container.Resources{
+				Memory:    int64(config.MaxMemSize),
+				CPUQuota:  int64(config.CPUQuota),
+				CPUPeriod: int64(config.CPUPeriod),
+			},
+		}, nil, nil, "")
+	if err != nil {
+		return nil, err
+	}
 
-	res, err := SendJSONSubmissionToDocker("8080", jsonSubmission)
-	if err != nil {
-		return "", err
+	// Start the container
+	if err := cli.ContainerStart(ctx, resp.ID, dockertypes.ContainerStartOptions{}); err != nil {
+		return nil, err
 	}
-	return res, nil
+	container, _ := cli.ContainerInspect(ctx, resp.ID)
+	realPort := container.NetworkSettings.Ports["8080/tcp"][0].HostPort
+	return &types.DockerContainer{
+		ContainerId: resp.ID,
+		Port:        realPort,
+		Cli:         cli,
+		Ctx:         ctx,
+	}, nil
 }
 
 func SendJSONSubmissionToDocker(port string, jsonSubmission string) (string, error) {
@@ -98,127 +128,22 @@ func KillDockerContainer(dockerContainer *types.DockerContainer) error {
 	return dockerContainer.Cli.ContainerKill(dockerContainer.Ctx, dockerContainer.ContainerId, "SIGKILL")
 }
 
-func StartExecutionServerInDocker(port string, config *types.DockerConfig) (*types.DockerContainer, error) {
-	// starts a docker container with the image "execution-server"
-	fmt.Println("Starting docker container...")
-	// Create a background context
-	ctx := context.Background()
-	// Initialize Docker client
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	// TODO cli is used later so maybe don't defer close
-	defer cli.Close() // Close the Docker client when function returns
-	if err != nil {
-		return nil, err
+func StartContainerAndRunSubmission(jsonSubmission string) (string, error) {
+	config := &types.DockerConfig{
+		MaxMemSize: 10000000,
+		CPUQuota:   125000,
+		CPUPeriod:  1000000,
 	}
-	resp, err := cli.ContainerCreate(
-		ctx,
-		&container.Config{
-			Image: "execution-server",
-			ExposedPorts: nat.PortSet{
-				"8080/tcp": struct{}{},
-			},
-			Tty: false,
-		},
-		&container.HostConfig{
-			PortBindings: nat.PortMap{
-				"8080/tcp": []nat.PortBinding{
-					{
-						HostIP:   "0.0.0.0",
-						HostPort: port,
-					},
-				},
-			},
-			Resources: container.Resources{
-				Memory:    int64(config.MaxMemSize),
-				CPUQuota:  int64(config.CPUQuota),
-				CPUPeriod: int64(config.CPUPeriod),
-			},
-		}, nil, nil, "")
-	if err != nil {
-		return nil, err
-	}
-
-	// Start the container
-	if err := cli.ContainerStart(ctx, resp.ID, dockertypes.ContainerStartOptions{}); err != nil {
-		return nil, err
-	}
-	container, _ := cli.ContainerInspect(ctx, resp.ID)
-	realPort := container.NetworkSettings.Ports["8080/tcp"][0].HostPort
-	return &types.DockerContainer{
-		ContainerId: resp.ID,
-		Port:        realPort,
-		Cli:         cli,
-		Ctx:         ctx,
-	}, nil
-}
-
-func waitForContainerRunning(cli *client.Client, containerID string) {
-	ctx := context.Background()
-	filterArgs := filters.NewArgs()
-	filterArgs.Add("id", containerID)
-	filterArgs.Add("status", "running")
-	options := dockertypes.ContainerListOptions{Filters: filterArgs}
-
-	for {
-		containers, err := cli.ContainerList(ctx, options)
-		if err != nil {
-			panic(err)
-		}
-
-		if len(containers) > 0 {
-			break
-		}
-
-		// Sleep for a short duration before checking again
-		time.Sleep(10 * time.Millisecond)
-	}
-}
-
-func RunJsInDocker(jsCode string) (string, error) {
-	// creates a js file inside docker using shell
-
-	// Create a background context
-	ctx := context.Background()
-
-	// Initialize Docker client
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	defer cli.Close() // Close the Docker client when function returns
+	dockerContainer, err := StartExecutionServerInDocker("8080", config)
 	if err != nil {
 		return "", err
 	}
+	defer CleanUp(dockerContainer, true)
+	WaitUntilAvailable(dockerContainer)
 
-	// Prepare the JavaScript code as a script file
-	scriptFile := "/app/script.js"
-
-	// Create a container with a volume mount to write the script file inside the container
-	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image: "node",
-		Cmd: []string{
-			"sh", "-c", fmt.Sprintf(
-				"mkdir -p /app && echo \"%s\" > %s && node %s", jsCode, scriptFile, scriptFile)},
-		Tty: false,
-	}, nil, nil, nil, "")
+	res, err := SendJSONSubmissionToDocker("8080", jsonSubmission)
 	if err != nil {
 		return "", err
 	}
-
-	// Start the container
-	if err := cli.ContainerStart(ctx, resp.ID, dockertypes.ContainerStartOptions{}); err != nil {
-		return "", err
-	}
-
-	// Wait for the container to stop
-	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
-	select {
-	case err := <-errCh:
-		if err != nil {
-			return "", err
-		}
-	case <-statusCh:
-	}
-
-	// Retrieve the logs of the container
-	out, err := cli.ContainerLogs(ctx, resp.ID, dockertypes.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
-	bytes, err := ioutil.ReadAll(out)
-	return string(bytes), err
+	return res, nil
 }
