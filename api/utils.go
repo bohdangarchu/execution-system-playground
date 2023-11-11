@@ -54,7 +54,7 @@ func monitorVMHealth(vmPool chan types.FirecrackerVM, config *types.Config, useD
 	}
 }
 
-func monitorV8Worker(workerPool chan types.V8Worker, config *types.ProcessIsolationConfig) {
+func monitorProcessWorkerHealth(workerPool chan types.ProcessWorker, config *types.ProcessIsolationConfig) {
 	for {
 		worker := <-workerPool
 		healthy := workerrunner.CheckWorkerHealth(&worker)

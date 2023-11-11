@@ -52,7 +52,7 @@ func getDockerHandler(containerPool chan types.DockerContainer) http.HandlerFunc
 	}
 }
 
-func getWorkerHandler(workerPool chan types.V8Worker, config *types.ProcessIsolationConfig) http.HandlerFunc {
+func getProcessWorkerHandler(workerPool chan types.ProcessWorker, config *types.ProcessIsolationConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(r.Body)
@@ -82,7 +82,6 @@ func getWorkerHandler(workerPool chan types.V8Worker, config *types.ProcessIsola
 
 func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// startTime := time.Now()
 		// starts a new container for each request
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(r.Body)
@@ -99,7 +98,6 @@ func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 			return
 		}
 		docrunner.WaitUntilAvailable(container)
-		// workerIsReady := time.Now()
 		result, err := docrunner.SendJSONSubmissionToDocker(container.Port, jsonSubmission)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to execute the submission: %v", err), http.StatusBadRequest)
@@ -109,20 +107,12 @@ func getDockerHandlerWithNewContainer(config *types.Config) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(responseJSON)
-		// executed := time.Now()
-		// docrunner.CleanUp(container, false)
-		// done := time.Now()
-		// fmt.Printf(
-		// 	"took %s to start container, %s to run the submission and %s to clean up\n",
-		// 	workerIsReady.Sub(startTime), executed.Sub(workerIsReady), done.Sub(executed),
-		// )
 	}
 }
 
 func getFirecrackerHandlerWithNewVM(config *types.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// starts a new VM for each request
-		// startTime := time.Now()
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(r.Body)
 		jsonSubmission := buf.String()
@@ -130,7 +120,6 @@ func getFirecrackerHandlerWithNewVM(config *types.Config) http.HandlerFunc {
 		vm, err := firerunner.StartVM(true, config.Firecracker, false)
 		defer vm.StopVMandCleanUp()
 		firerunner.WaitUntilAvailable(vm)
-		// workerIsReady := time.Now()
 		if err != nil {
 			fmt.Printf("failed to start vm: %v\n", err)
 		}
@@ -143,16 +132,10 @@ func getFirecrackerHandlerWithNewVM(config *types.Config) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(responseJSON)
-		// executed := time.Now()
-		// done := time.Now()
-		// fmt.Printf(
-		// 	"took %s to start VM, %s to run the submission and %s to clean up\n",
-		// 	workerIsReady.Sub(startTime), executed.Sub(workerIsReady), done.Sub(executed),
-		// )
 	}
 }
 
-func getWorkerHandlerWithNewWorker(config *types.Config) http.HandlerFunc {
+func getWorkerHandlerWithNewProcessWorker(config *types.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// starts a new worker for each request
 		buf := new(bytes.Buffer)

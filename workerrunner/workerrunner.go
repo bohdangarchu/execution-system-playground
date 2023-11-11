@@ -12,7 +12,7 @@ import (
 
 const WORKER_PATH = "/home/bohdan/workspace/uni/thesis/worker/worker-bin"
 
-func StartProcessWorker(config *types.ProcessIsolationConfig) *types.V8Worker {
+func StartProcessWorker(config *types.ProcessIsolationConfig) *types.ProcessWorker {
 	id := xid.New().String()
 	socketPath := fmt.Sprintf("/tmp/worker-%s.sock", id)
 	println("socket path: ", socketPath)
@@ -42,7 +42,7 @@ func StartProcessWorker(config *types.ProcessIsolationConfig) *types.V8Worker {
 	if err != nil {
 		println("error adding process to the cgroup: ", err.Error())
 	}
-	return &types.V8Worker{
+	return &types.ProcessWorker{
 		Id:             id,
 		SocketPath:     socketPath,
 		ExecutablePath: WORKER_PATH,

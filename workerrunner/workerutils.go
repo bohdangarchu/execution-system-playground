@@ -77,7 +77,7 @@ func IsProcessRunning(pid int) bool {
 	return false
 }
 
-func IsWorkerRunning(worker *types.V8Worker) bool {
+func IsWorkerRunning(worker *types.ProcessWorker) bool {
 	finished := make(chan error, 1)
 	go func() {
 		err := worker.Cmd.Wait()
@@ -95,7 +95,7 @@ func KillWorker(cmd *exec.Cmd) error {
 	return cmd.Process.Kill()
 }
 
-func CheckWorkerHealth(worker *types.V8Worker) bool {
+func CheckWorkerHealth(worker *types.ProcessWorker) bool {
 	client := &http.Client{
 		Transport: &http.Transport{
 			Dial: func(proto, addr string) (conn net.Conn, err error) {
@@ -119,7 +119,7 @@ func CheckWorkerHealth(worker *types.V8Worker) bool {
 	return true
 }
 
-func WaitUntilAvailable(worker *types.V8Worker) {
+func WaitUntilAvailable(worker *types.ProcessWorker) {
 	for {
 		if CheckWorkerHealth(worker) {
 			break

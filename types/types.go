@@ -53,7 +53,7 @@ type DockerContainer struct {
 	Ctx         context.Context
 }
 
-type V8Worker struct {
+type ProcessWorker struct {
 	Id             string
 	SocketPath     string
 	ExecutablePath string
