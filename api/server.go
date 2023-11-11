@@ -6,7 +6,6 @@ import (
 	"app/types"
 	"app/workerrunner"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -31,10 +30,10 @@ func Run(config *types.Config) {
 			os.Exit(0)
 		})
 	}
-	log.Println("Listening on :8080...")
+	fmt.Println("Listening on :8080...")
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }
 
@@ -66,7 +65,7 @@ func runInWorkerPool(config *types.Config) {
 			vm, err := firerunner.StartVM(true, config.Firecracker, false)
 			firerunner.WaitUntilAvailable(vm)
 			if err != nil {
-				log.Fatalf("Failed to start VM: %v", err)
+				panic(fmt.Sprintf("failed to start vm: %v\n", err))
 			}
 			vmPool <- *vm
 		}

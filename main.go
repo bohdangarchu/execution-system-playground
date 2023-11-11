@@ -6,7 +6,7 @@ import (
 	"app/types"
 	"app/utils"
 	"flag"
-	"log"
+	"fmt"
 )
 
 func main() {
@@ -29,11 +29,11 @@ func runVM() {
 	}, true)
 	defer vm.StopVMandCleanUp()
 	if err != nil {
-		log.Fatalf("Failed to start VM: %v", err)
+		panic(fmt.Sprintf("Failed to start VM: %v", err))
 	}
 	res, err := firerunner.RunSubmissionInsideVM(vm, utils.JsonSubmission)
 	if err != nil {
-		log.Fatalf("Failed to run submission inside VM: %v", err)
+		panic(fmt.Sprintf("Failed to run submission inside VM: %v", err))
 	}
-	log.Println(res)
+	fmt.Println(res)
 }

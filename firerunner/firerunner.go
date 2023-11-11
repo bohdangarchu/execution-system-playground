@@ -139,12 +139,12 @@ func RunStandaloneVM() {
 	}, true)
 	executionTime := time.Since(startTime)
 	if err != nil {
-		log.Fatalf("Failed to start VM: %v", err)
+		panic(fmt.Sprintf("Failed to start VM: %v", err))
 	}
-	log.Printf("VM started in: %s", executionTime)
-	log.Printf("ip address: %s", vm.Machine.Cfg.NetworkInterfaces[0].StaticConfiguration.IPConfiguration.IPAddr.IP.String())
+	fmt.Printf("VM started in %s\n", executionTime)
+	fmt.Printf("VM IP: %s\n", vm.Ip.String())
 
 	time.Sleep(1 * time.Second)
 	vm.StopVMandCleanUp()
-	log.Printf("Start machine was happy")
+	fmt.Println("Start machine was happy")
 }
