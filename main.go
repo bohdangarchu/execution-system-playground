@@ -10,7 +10,6 @@ import (
 )
 
 func main() {
-	// performance.MeasureStartupTimes()
 	runServer()
 }
 

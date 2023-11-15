@@ -18,16 +18,13 @@ var jsonSubmission = `
 {
 	"functionName": "addTwoNumbers",
 	"code": "function addTwoNumbers(a, b) {\n  return a + b;\n}",
+	"language": "js",
 	"testCases": [
 	  {
 		"input": [
 		  {
-			"value": 3,
-			"type": "number"
-		  },
-		  {
-			"value": -10,
-			"type": "number"
+			"id": "1",
+			"input": ["1", "2"]
 		  }
 		]
 	  }

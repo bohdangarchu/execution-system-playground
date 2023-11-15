@@ -18,7 +18,7 @@ import (
 
 const FIRECRACKER_BIN_PATH = "/home/bohdan/software/firecracker/build/cargo_target/x86_64-unknown-linux-musl/debug/firecracker"
 const KERNEL_IMAGE_PATH = "/home/bohdan/workspace/assets/hello-vmlinux.bin"
-const FILESYSTEM_IMAGE_PATH = "/home/bohdan/workspace/uni/thesis/worker/firecracker/rootfs.ext4"
+const FILESYSTEM_IMAGE_PATH = "../worker/firecracker/rootfs.ext4"
 
 func RunSubmissionInsideVM(vm *types.FirecrackerVM, jsonSubmission string) (string, error) {
 	return executeJSONSubmissionInVM(

@@ -2,19 +2,38 @@ Config example
 
 ```
 {
-    "isolation": "docker",
-    "workers": 0,
+    "isolation": "firecracker",
+    "workers": 1,
     "firecracker": {
-        "cpuCount": 1,
-        "memSizeMib": 128
+        "memSizeMib": 256,
+        "cpuQuota": 2000000,
+        "cpuPeriod": 1000000
     },
     "docker": {
-        "maxMemSize": 10000000,
-        "nanoCPUs": 1000000000
+        "maxMemSize": 268435000,
+        "cpuQuota": 1000000,
+        "cpuPeriod": 1000000
     },
     "processIsolation": {
-        "cgroupMaxMem": 100000000,
-        "cgroupMaxCPU": 100
+        "maxMemSize": 268435000,
+        "cpuQuota": 1000000,
+        "cpuPeriod": 1000000
     }
+}
+```
+
+Submission example
+
+```
+{
+  "functionName": "square",
+  "code": "function square(a) {\n console.log(\"squaring\", a)\n return Math.pow(a, 2) \n}",
+  "language": "js",
+  "testCases": [
+    {
+      "id": "1",
+      "input": ["5"]
+    }
+  ]
 }
 ```
